@@ -46,7 +46,10 @@ function escapeHtml(value: string) {
 }
 
 function toPlainTextHtml(html: string) {
-    const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const text = html
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
     return text ? `<p>${escapeHtml(text)}</p>` : '';
 }
 
@@ -65,9 +68,8 @@ function sanitizeNoteHtml(html: string) {
 
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
-        const href = tagName === 'a'
-            ? element.getAttribute('href')?.trim() ?? ''
-            : '';
+        const href =
+            tagName === 'a' ? (element.getAttribute('href')?.trim() ?? '') : '';
 
         if (!ALLOWED_HTML_TAGS.has(tagName)) {
             const fragment = doc.createDocumentFragment();
@@ -121,23 +123,28 @@ function timeAgo(dateStr: string): string {
     if (mins < 60) return `${mins}m ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(dateStr).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+    });
 }
 
 export default function NoteCard({
     note,
     onDelete,
     index = 0,
+    onClick,
 }: {
     note: Note;
     onDelete: (id: string) => void;
     index?: number;
+    onClick?: () => void; // New type definition
 }) {
     const supabase = createClient();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
     const [renderedContent, setRenderedContent] = useState(() =>
-        note.content ? toPlainTextHtml(note.content) : ''
+        note.content ? toPlainTextHtml(note.content) : '',
     );
 
     useEffect(() => {
@@ -176,6 +183,7 @@ export default function NoteCard({
 
     return (
         <div
+            onClick={onClick}
             className={`
                 group relative flex flex-col rounded-2xl border border-border/60 bg-card
                 hover:border-primary/30 hover:shadow-card-dark
@@ -210,26 +218,40 @@ export default function NoteCard({
                     <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         {/* Favorite button */}
                         <button
-                            onClick={toggleFavorite}
+                            onClick={(e) => {
+                                console.log('toggle');
+                                e.stopPropagation();
+                                void toggleFavorite();
+                            }}
                             disabled={isTogglingFav}
-                            title={note.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                            title={
+                                note.is_favorite
+                                    ? 'Remove from favorites'
+                                    : 'Add to favorites'
+                            }
                             className={`
                                 p-1.5 rounded-lg transition-all duration-200
-                                ${note.is_favorite
-                                    ? 'text-amber-400 hover:text-amber-500 hover:bg-amber-400/10'
-                                    : 'text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10'
+                                ${
+                                    note.is_favorite
+                                        ? 'text-amber-400 hover:text-amber-500 hover:bg-amber-400/10'
+                                        : 'text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10'
                                 }
                             `}
                         >
                             <Star
                                 size={15}
                                 className={`transition-all duration-200 ${isTogglingFav ? 'animate-pulse' : ''}`}
-                                fill={note.is_favorite ? 'currentColor' : 'none'}
+                                fill={
+                                    note.is_favorite ? 'currentColor' : 'none'
+                                }
                             />
                         </button>
                         {/* Delete button */}
                         <button
-                            onClick={handleDelete}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                void handleDelete();
+                            }}
                             title="Delete note"
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
                         >
@@ -241,7 +263,11 @@ export default function NoteCard({
                 {/* Always show star if favorited even when not hovering */}
                 {note.is_favorite && (
                     <div className="absolute top-4 right-4 opacity-100 group-hover:opacity-0 transition-opacity">
-                        <Star size={14} className="text-amber-400" fill="currentColor" />
+                        <Star
+                            size={14}
+                            className="text-amber-400"
+                            fill="currentColor"
+                        />
                     </div>
                 )}
 
