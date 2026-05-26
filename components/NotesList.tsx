@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import NoteCard from './NoteCard';
+import { BookOpen, Star } from 'lucide-react';
+import Link from 'next/link';
 
 type Note = {
     id: string;
@@ -14,6 +16,8 @@ type Note = {
     created_at: string;
 };
 
+type FilterType = 'all' | 'favorites';
+
 export default function NotesList({
     initialNotes,
     userId,
@@ -21,16 +25,15 @@ export default function NotesList({
     initialNotes: Note[];
     userId: string;
 }) {
-    const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
+    const [filter, setFilter] = useState<FilterType>('all');
     const [notes, setNotes] = useState<Note[]>(initialNotes);
     const supabase = createClient();
 
-    const displayedNotes = showFavoritesOnly
+    const displayedNotes = filter === 'favorites'
         ? notes.filter((note) => note.is_favorite)
         : notes;
 
     useEffect(() => {
-        // Open a real-time channel filtered to this user's notes
         const channel = supabase
             .channel('notes-realtime')
             .on(
@@ -43,30 +46,24 @@ export default function NotesList({
                 },
                 (payload) => {
                     if (payload.eventType === 'INSERT') {
-                        setNotes((current) => [
-                            payload.new as Note,
-                            ...current,
-                        ]);
+                        setNotes((current) => [payload.new as Note, ...current]);
                     } else if (payload.eventType === 'DELETE') {
                         setNotes((current) =>
-                            current.filter(
-                                (note) => note.id !== payload.old.id,
-                            ),
+                            current.filter((note) => note.id !== payload.old.id)
                         );
                     } else if (payload.eventType === 'UPDATE') {
                         setNotes((current) =>
                             current.map((note) =>
                                 note.id === (payload.new as Note).id
                                     ? (payload.new as Note)
-                                    : note,
-                            ),
+                                    : note
+                            )
                         );
                     }
-                },
+                }
             )
             .subscribe();
 
-        // Clean up the channel when the component unmounts
         return () => {
             supabase.removeChannel(channel);
         };
@@ -76,38 +73,93 @@ export default function NotesList({
         setNotes((current) => current.filter((note) => note.id !== id));
     }
 
+    const tabs: { id: FilterType; label: string; icon: React.ElementType; count?: number }[] = [
+        { id: 'all', label: 'All Notes', icon: BookOpen, count: notes.length },
+        { id: 'favorites', label: 'Favorites', icon: Star, count: notes.filter(n => n.is_favorite).length },
+    ];
+
     return (
-        <div className="grid gap-4 md:grid-cols-2">
-            <div>
-                <button
-                    onClick={() => {
-                        setShowFavoritesOnly(false);
-                    }}
-                    className={`${!showFavoritesOnly && 'text-yellow-300'}`}
-                >
-                    All Notes
-                </button>
-                <button
-                    onClick={() => {
-                        setShowFavoritesOnly(true);
-                    }}
-                    className={`${showFavoritesOnly && 'text-yellow-300'}`}
-                >
-                    Favorites Only
-                </button>
+        <div className="animate-fade-in">
+            {/* Filter tabs */}
+            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit mb-6">
+                {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const active = filter === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilter(tab.id)}
+                            className={`
+                                flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                                transition-all duration-200
+                                ${active
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                }
+                            `}
+                        >
+                            <Icon size={14} className={active ? 'text-primary' : ''} />
+                            {tab.label}
+                            {tab.count !== undefined && tab.count > 0 && (
+                                <span className={`
+                                    text-xs px-1.5 py-0.5 rounded-full font-medium
+                                    ${active
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'bg-muted text-muted-foreground'
+                                    }
+                                `}>
+                                    {tab.count}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
+
+            {/* Notes grid */}
             {notes.length === 0 ? (
-                <p className="col-span-2 py-8 text-center text-gray-500">
-                    No notes yet. Create your first note above!
-                </p>
+                <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+                    <div className="w-20 h-20 rounded-3xl bg-muted/60 flex items-center justify-center mb-6">
+                        <BookOpen size={36} className="text-muted-foreground/40" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No notes yet</h3>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                        Start capturing your thoughts, ideas, and anything worth remembering.
+                    </p>
+                    <Link
+                        href="/notes/create"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all shadow-glow-sm"
+                    >
+                        Create your first note
+                    </Link>
+                </div>
+            ) : displayedNotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+                    <div className="w-20 h-20 rounded-3xl bg-amber-400/10 flex items-center justify-center mb-6">
+                        <Star size={36} className="text-amber-400/60" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No favorites yet</h3>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                        Star a note to add it to your favorites for quick access.
+                    </p>
+                    <button
+                        onClick={() => setFilter('all')}
+                        className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+                    >
+                        View all notes
+                    </button>
+                </div>
             ) : (
-                displayedNotes.map((note) => (
-                    <NoteCard
-                        key={note.id}
-                        note={note}
-                        onDelete={handleDelete}
-                    />
-                ))
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {displayedNotes.map((note, index) => (
+                        <NoteCard
+                            key={note.id}
+                            note={note}
+                            onDelete={handleDelete}
+                            index={index}
+                        />
+                    ))}
+                </div>
             )}
         </div>
     );
