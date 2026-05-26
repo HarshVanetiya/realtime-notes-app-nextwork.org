@@ -1,109 +1,112 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+<img src="https://cdn.prod.website-files.com/677c400686e724409a5a7409/6790ad949cf622dc8dcd9fe4_nextwork-logo-leather.svg" alt="NextWork" width="300" />
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+# Build a Real-Time Notes App
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+**Project Link:** [View Project](https://learn.nextwork.org/projects/6a3a7ddb-254f-4f60-b724-7619e0096351)
 
-## Features
+**Author:** Harsh Vanetia  
+**Email:** hvanetiya@gmail.com
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+---
 
-## Demo
+![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_kz6vakg0)
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+## Project Overview
 
-## Deploy to Vercel
+### Goals and motivation
 
-Vercel deployment will guide you through creating a Supabase account and project.
+I am building a notes app using supabase and nextjs so that I can learn all features of supabase
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+## Scaffolding the Next.js App with Supabase
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### Setting up the project
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+In this step, I'm setting up nextjs project with supabase template so that I can use cookie-based auth, TypeScript, Tailwind CSS, and pre-built UI components right out of the box.
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_c3omz2p4)
 
-## Clone and run locally
+### What the template provides
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+The template gives me auth setup and pre configured ui and supabase which means I don't have to build supabase client and logic for authentication
 
-2. Create a Next.js app using the Supabase Starter template npx command
+## Designing a Secure Database with Row Level Security
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+### Creating the notes table
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+In this step, I'm setting up tables and RLS so that I can store data and only authorised user can see their own data
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_ayq9rybo)
 
-3. Use `cd` to change into the app's directory
+### How Row Level Security protects user data
 
-   ```bash
-   cd with-supabase-app
-   ```
+Row Level Security ensures that user without sufficient permissions cant fetch the data by checking auth.uid with tables user_id
 
-4. Rename `.env.example` to `.env.local` and update the following:
+## Building the Protected Notes Dashboard
 
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+### Dashboard architecture
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+In this step, I'm building UI. so that users can their own notes
 
-5. You can now run the Next.js local development server:
+### Secure authentication with getClaims()
 
-   ```bash
-   npm run dev
-   ```
+I learned that getClaims() is used because it reads access token from storage and verify it cryptographically. Older method getSession does not do that 
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+## Enabling Real-Time Sync Across Tabs
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+### Setting up real-time subscriptions
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+In this step, I'm creating real time subscription for notes so that notes can noteslist component can sync data accross all tabs
 
-## Feedback and issues
+![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_3lubzu2p)
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+### Cleaning up subscriptions properly
 
-## More Supabase examples
+The cleanup function calls supabase.removeChannel which prevents updation of another user's notes affecting current users list
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+## Adding Image Attachments with Supabase Storage
+
+### Configuring the storage bucket
+
+In this step, I'm setting up storage bucket so that I can store media for notes
+
+![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_kdongp7t)
+
+### Per-user file isolation strategy
+
+Each user's files are stored in a folder named their userId The policy ensures only user whom the folder is belongs to can access the media inside it
+
+## Testing the Full-Stack App End to End
+
+### Full flow verification
+
+In this step, I'm testing complete app so that I can confirm all functionalities work correctly
+
+### Confirming Row Level Security works
+
+I verified RLS by creating a second account and observing that new account is not displaying other account's notes
+
+## Secret Mission: Real-Time Favorites with Filtering
+
+![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_7l2w103v)
+
+### Reusing the existing subscription for favorites
+
+In this project extension, the existing subscription already handles updation of UI on change of fav status
+
+## Reflections and Key Takeaways
+
+### Tools and concepts learned
+
+The key tools I used include supabase, vercel and vs code Key concepts I learnt include supabase storage, real-time, RLS and database tables
+
+### Time and challenges
+
+This project took me approximately 2hrs The most challenging part was real time subscription
+
+### Final thoughts
+
+I did this project today to learn how to leverage supabse to build full stack app. Another skill I want to learn is scalability.
+
+---
+
+*Built with [NextWork](https://learn.nextwork.org) - [View this project](https://learn.nextwork.org/projects/6a3a7ddb-254f-4f60-b724-7619e0096351)*
