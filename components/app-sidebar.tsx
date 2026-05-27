@@ -15,6 +15,9 @@ import {
     NotebookPen,
 } from 'lucide-react';
 
+import Image from 'next/image';
+import notesIcon from '../public/notes-icon.svg';
+
 const navItems = [
     { href: '/notes', label: 'My Notes', icon: BookOpen, exact: true },
     {
@@ -37,6 +40,7 @@ export default function AppSidebar() {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     useEffect(() => {
         async function getUser() {
@@ -60,35 +64,37 @@ export default function AppSidebar() {
     };
 
     const initials = userEmail ? userEmail.charAt(0).toUpperCase() : '?';
+    const [isHovered, setIsHovered] = useState(false);
 
-    const SidebarContent = () => (
-        <div className="flex flex-col h-full">
+    const SidebarContent = ({ collapsed }: { collapsed?: boolean }) => (
+        <div className="flex flex-col h-full overflow-hidden">
             {/* Brand */}
-            <div className="flex items-center gap-3 px-5 py-6 border-b border-border/50">
-                <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
-                    <NotebookPen size={18} className="text-white" />
+            <div className="flex items-center gap-2.5 px-4 py-6 border-b border-border/50 flex-shrink-0 bg-white/30 ">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent">
+                    <Image
+                        src={notesIcon}
+                        alt="Slate Logo"
+                        className="w-full h-full object-contain"
+                    />
                 </div>
-                <div>
-                    <h1 className="font-bold text-sm text-foreground tracking-tight">
-                        Realtime Notes
+                <div
+                    className={`transition-all duration-300 flex flex-col justify-center min-w-0 ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
+                >
+                    <h1 className="font-black text-2xl text-foreground tracking-tighter truncate lowercase flex items-baseline">
+                        slate<span className="text-primary font-black">.</span>
                     </h1>
-                    <p className="text-xs text-muted-foreground">
-                        Your personal workspace
-                    </p>
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 px-3 mb-3">
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
+                <p
+                    className={`text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 px-3 mb-3 transition-all duration-300 truncate ${collapsed ? 'opacity-0 h-0 mb-0 pointer-events-none' : 'opacity-100 w-auto'}`}
+                >
                     Workspace
                 </p>
                 {navItems.map((item) => {
-                    const active = isActive(
-                        item.href,
-                        item.exact ?? false,
-                        // item.isFavorites,
-                    );
+                    const active = isActive(item.href, item.exact ?? false);
                     const Icon = item.icon;
                     return (
                         <Link
@@ -96,14 +102,15 @@ export default function AppSidebar() {
                             href={item.href}
                             onClick={() => setIsOpen(false)}
                             className={`
-                group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                transition-all duration-200 relative
-                ${
-                    active
-                        ? 'bg-primary/10 text-primary shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                }
-              `}
+                                group flex items-center rounded-xl text-sm font-medium
+                                transition-all duration-200 relative
+                                ${
+                                    active
+                                        ? ' text-primary shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                                }
+                                ${collapsed ? 'gap-0 px-2 py-2.5 justify-center' : 'gap-3 px-3 py-2.5'}
+                            `}
                         >
                             {active && (
                                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
@@ -112,34 +119,63 @@ export default function AppSidebar() {
                                 size={17}
                                 className={`flex-shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
                             />
-                            {item.label}
+                            <span
+                                className={`transition-all duration-300 truncate ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
+                            >
+                                {item.label}
+                            </span>
                         </Link>
                     );
                 })}
             </nav>
 
             {/* User + Logout */}
-            <div className="px-3 py-4 border-t border-border/50">
-                <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted/50 transition-colors group">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+            <div
+                className={`py-4 border-t border-border/50 flex-shrink-0 overflow-visible transition-all duration-300 relative ${collapsed ? 'px-[19px]' : 'px-4'}`}
+            >
+                <div
+                    onClick={() =>
+                        !collapsed && setIsProfileOpen(!isProfileOpen)
+                    }
+                    className={`flex items-center rounded-xl hover:bg-white/5 transition-colors cursor-pointer group ${collapsed ? 'gap-0 p-0 cursor-default' : 'gap-3 px-2 py-2'}`}
+                >
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0 border border-primary/20">
                         {initials}
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-foreground truncate">
-                            {userEmail ?? 'Loading...'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                            Signed in
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        title="Sign out"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    <div
+                        className={`transition-all duration-300 flex-1 min-w-0 flex items-center justify-between ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
                     >
-                        <LogOut size={15} />
-                    </button>
+                        <div className="min-w-0 pr-2">
+                            <p className="text-sm font-medium text-foreground truncate">
+                                Profile
+                            </p>
+                            {/* <p className="text-xs text-green-500 truncate flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
+                            </p> */}
+                        </div>
+                    </div>
                 </div>
+
+                {/* Dropdown Menu */}
+                {!collapsed && isProfileOpen && (
+                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg p-2 flex flex-col gap-1 z-50">
+                        <div className="px-2 py-2 border-b border-white/10 mb-5">
+                            <p className="text-xs text-muted-foreground">
+                                Logged in as
+                            </p>
+                            <p className="text-sm font-medium text-foreground truncate">
+                                {userEmail ?? 'Loading...'}
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-2 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors text-left font-medium"
+                        >
+                            <LogOut size={16} />
+                            Log out
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -165,17 +201,33 @@ export default function AppSidebar() {
             {/* Mobile sidebar */}
             <aside
                 className={`
-          lg:hidden fixed left-0 top-0 z-40 h-full w-64 bg-sidebar border-r border-border
+          lg:hidden fixed left-0 top-0 z-40 h-full w-64 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl border-r
           transition-transform duration-300 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
             >
-                <SidebarContent />
+                <SidebarContent collapsed={false} />
             </aside>
 
-            {/* Desktop sidebar */}
-            <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-sidebar border-r border-border flex-shrink-0 animate-fade-in-left">
-                <SidebarContent />
+            {/* Desktop sidebar container (reserves space so layout doesn't shift) */}
+            <aside
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => {
+                    setIsProfileOpen(false);
+                    setIsHovered(false);
+                }}
+                className="hidden lg:block relative h-screen transition-all duration-300 ease-in-out flex-shrink-0 w-[70px]"
+            >
+                {/* Floating expandable menu */}
+                <div
+                    className={`
+                        fixed left-0 top-0 h-screen bg-white/10 backdrop-blur-md border border-white/20 border-r flex flex-col
+                        transition-all duration-300 ease-in-out z-40 overflow-hidden
+                        ${isHovered ? 'w-64 shadow-lg' : 'w-[70px]'}
+                    `}
+                >
+                    <SidebarContent collapsed={!isHovered} />
+                </div>
             </aside>
         </>
     );

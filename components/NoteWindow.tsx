@@ -46,12 +46,12 @@ export default function NoteWindow({
                     initial={{ opacity: 0, scale: 0.8, y: 50 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur-md"
+                    className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-[#14213d]/70 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
                 >
                     {/* Window Header (Drag Handle) */}
-                    <div className="window-drag-handle flex flex-shrink-0 cursor-grab items-center justify-between border-b border-border bg-muted/30 px-3 py-2 active:cursor-grabbing">
+                    <div className="window-drag-handle flex flex-shrink-0 cursor-grab items-center justify-between border-b border-white/10 bg-black/20 px-3 py-2 active:cursor-grabbing">
                         {/* macOS style traffic lights */}
-                        <div className="flex gap-2">
+                        <div className="flex w-[60px] items-center gap-2">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -91,22 +91,26 @@ export default function NoteWindow({
                                 />
                             </button>
                         </div>
-                        <div className="select-none truncate px-4 text-xs font-medium text-muted-foreground">
-                            {window.note.title}
+                        {/* Title and App Icon */}
+                        <div className="flex select-none items-center gap-2 truncate px-4 text-xs font-semibold text-[#e5e5e5]">
+                            {window.note.image_url && (
+                                <img
+                                    src={window.note.image_url}
+                                    alt="App Icon"
+                                    className="h-5 w-5 rounded object-cover shadow-sm ring-1 ring-white/20"
+                                />
+                            )}
+                            <span>{window.note.title}</span>
                         </div>
-                        <div className="w-10"></div> {/* Spacer */}
+                        <div className="w-[60px]"></div>{' '}
+                        {/* Spacer to balance flex-between */}
                     </div>
 
                     {/* Window Content */}
-                    <div className="custom-scrollbar flex-1 cursor-text overflow-y-auto p-6">
-                        {window.note.image_url && (
-                            <img
-                                src={window.note.image_url}
-                                alt="Attachment"
-                                className="mb-4 h-auto w-full rounded-lg object-cover"
-                            />
-                        )}
-                        <NoteRenderer content={window.note.content} />
+                    <div className="custom-scrollbar flex-1 cursor-text overflow-y-auto">
+                        <div className="flex h-full w-full justify-center pt-4">
+                            <NoteRenderer content={window.note.content} />
+                        </div>
                     </div>
                 </motion.div>
             </AnimatePresence>

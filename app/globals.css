@@ -6,63 +6,63 @@
 
 @layer base {
     :root {
-        /* Light theme — clean white with blue-gray tones */
-        --background: 220 20% 97%;
-        --foreground: 224 40% 12%;
+        /* Light theme — White background, Black text, Orange primary */
+        --background: 0 0% 100%;
+        --foreground: 0 0% 0%;
         --card: 0 0% 100%;
-        --card-foreground: 224 40% 12%;
+        --card-foreground: 0 0% 0%;
         --popover: 0 0% 100%;
-        --popover-foreground: 224 40% 12%;
-        --primary: 243 75% 59%;
-        --primary-foreground: 0 0% 100%;
-        --secondary: 220 14% 93%;
-        --secondary-foreground: 224 40% 12%;
-        --muted: 220 14% 93%;
-        --muted-foreground: 220 15% 50%;
-        --accent: 243 75% 95%;
-        --accent-foreground: 243 75% 40%;
-        --destructive: 0 84% 60%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 220 13% 88%;
-        --input: 220 13% 91%;
-        --ring: 243 75% 59%;
+        --popover-foreground: 0 0% 0%;
+        --primary: 37 98% 53%;
+        --primary-foreground: 0 0% 0%;
+        --secondary: 221 51% 16%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 0 0% 90%;
+        --muted-foreground: 221 51% 40%;
+        --accent: 221 51% 16%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 90%;
+        --input: 0 0% 90%;
+        --ring: 37 98% 53%;
         --radius: 0.75rem;
 
         /* Custom design tokens */
-        --sidebar-bg: 220 20% 97%;
-        --sidebar-border: 220 13% 88%;
+        --sidebar-bg: 0 0% 95%;
+        --sidebar-border: 0 0% 90%;
         --sidebar-width: 260px;
-        --glass-bg: 0 0% 100% / 0.7;
-        --glass-border: 220 13% 88% / 0.5;
+        --glass-bg: 0 0% 100% / 0.8;
+        --glass-border: 0 0% 90% / 0.8;
     }
 
     .dark {
-        /* Dark theme — deep navy/indigo (NotebookLM-style) */
-        --background: 224 39% 7%;
-        --foreground: 213 31% 91%;
-        --card: 225 35% 10%;
-        --card-foreground: 213 31% 91%;
-        --popover: 225 35% 10%;
-        --popover-foreground: 213 31% 91%;
-        --primary: 243 75% 65%;
-        --primary-foreground: 0 0% 100%;
-        --secondary: 225 28% 15%;
-        --secondary-foreground: 213 31% 85%;
-        --muted: 225 28% 14%;
-        --muted-foreground: 215 20% 55%;
-        --accent: 243 50% 18%;
-        --accent-foreground: 243 75% 75%;
-        --destructive: 0 70% 50%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 225 25% 18%;
-        --input: 225 25% 16%;
-        --ring: 243 75% 65%;
+        /* Dark theme — Black background, White text, Orange primary */
+        --background: 0 0% 0%;
+        --foreground: 0 0% 100%;
+        --card: 221 51% 16%;
+        --card-foreground: 0 0% 100%;
+        --popover: 221 51% 16%;
+        --popover-foreground: 0 0% 100%;
+        --primary: 37 98% 53%;
+        --primary-foreground: 0 0% 0%;
+        --secondary: 221 51% 25%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 221 51% 16%;
+        --muted-foreground: 0 0% 70%;
+        --accent: 221 51% 25%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 221 51% 25%;
+        --input: 221 51% 16%;
+        --ring: 37 98% 53%;
 
         /* Custom design tokens */
-        --sidebar-bg: 225 39% 6%;
-        --sidebar-border: 225 25% 15%;
-        --glass-bg: 225 35% 10% / 0.8;
-        --glass-border: 225 25% 22% / 0.6;
+        --sidebar-bg: 0 0% 0%;
+        --sidebar-border: 221 51% 16%;
+        --glass-bg: 221 51% 16% / 0.8;
+        --glass-border: 221 51% 25% / 0.6;
     }
 }
 
@@ -216,4 +216,13 @@
     content: none !important;
     display: none !important;
     pointer-events: none !important;
+}
+
+/* Make BlockNote background transparent so window glassmorphism shows through */
+.bn-container, 
+.bn-container[data-theme='dark'] {
+    background-color: transparent !important;
+}
+.bn-editor {
+    background-color: transparent !important;
 }

@@ -71,10 +71,16 @@ function extractPreviewText(content: string) {
         return finalText ? `<p>${escapeHtml(finalText)}</p>` : '';
     } catch {
         // 2. If JSON.parse fails, it's the old HTML format!
-        if (typeof window === 'undefined') return '';
-        const doc = new DOMParser().parseFromString(content, 'text/html');
-        const text = doc.body.textContent || '';
-        return text.trim() ? `<p>${escapeHtml(text.trim())}</p>` : '';
+        // We strip tags using a regex to produce matching output on both server and client.
+        const plainText = content.replace(/<[^>]*>/g, '');
+        const decodedText = plainText
+            .replaceAll('&amp;', '&')
+            .replaceAll('&lt;', '<')
+            .replaceAll('&gt;', '>')
+            .replaceAll('&quot;', '"')
+            .replaceAll('&#39;', "'");
+        const finalText = decodedText.trim();
+        return finalText ? `<p>${escapeHtml(finalText)}</p>` : '';
     }
 }
 
@@ -151,10 +157,10 @@ export default function NoteCard({
         <div
             onClick={onClick}
             className={`
-                group relative flex flex-col rounded-2xl border border-border/60 bg-card
-                hover:border-primary/20 hover:shadow-md
+                group relative flex flex-col rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md
+                hover:border-white/30 hover:bg-white/20 hover:shadow-lg
                 transition-all duration-300 ease-out overflow-hidden animate-fade-in ${staggerClass}
-                ${note.is_favorite ? 'border-amber-400/60 bg-amber-500/[0.02]' : ''}
+                ${note.is_favorite ? 'border-amber-400/30 bg-amber-500/10' : ''}
                 ${isDeleting ? 'opacity-50 scale-95 pointer-events-none' : ''}
             `}
         >
@@ -263,7 +269,7 @@ export default function NoteCard({
 
             {/* Footer */}
             <div className="px-4 pb-4 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground/70">
+                <span className="text-xs text-muted-foreground/70" suppressHydrationWarning>
                     {timeAgo(note.created_at)}
                 </span>
                 {note.is_favorite && (
