@@ -27,44 +27,30 @@ async function NoteContent({
 
     return (
         <>
-            {/* Banner Section */}
-            {note.image_url ? (
-                <div className="relative flex h-[50vh] min-h-[300px] w-full items-end justify-center overflow-hidden">
-                    <div
-                        className="absolute inset-0 scale-110 bg-cover bg-center opacity-50 blur-xl"
-                        style={{ backgroundImage: `url(${note.image_url})` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-                    <img
-                        src={note.image_url}
-                        alt={note.title}
-                        className="absolute inset-0 z-10 h-full w-full object-contain opacity-40"
-                    />
-                    <div className="relative z-20 mx-auto w-full max-w-4xl px-6 pb-8">
-                        <Link
-                            href="/notes"
-                            className="mb-4 inline-flex items-center gap-2 rounded-full bg-background/50 px-3 py-1.5 text-sm font-medium text-foreground/80 backdrop-blur-md transition-colors hover:text-foreground"
-                        >
-                            <ArrowLeft size={16} />
-                            Back to Notes
-                        </Link>
-                        <h1 className="text-5xl font-bold text-foreground drop-shadow-lg">
-                            {note.title}
-                        </h1>
+            {/* Cover Banner and Header Section */}
+            <div className="mx-auto max-w-4xl px-6 pb-4 pt-12">
+                <Link
+                    href="/notes"
+                    className="mb-6 inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground text-sm font-medium"
+                >
+                    <ArrowLeft size={16} />
+                    Back to Notes
+                </Link>
+                
+                {note.image_url && (
+                    <div className="relative w-full h-[250px] sm:h-[350px] overflow-hidden rounded-2xl border border-border/60 bg-muted mb-8">
+                        <img
+                            src={note.image_url}
+                            alt={note.title}
+                            className="w-full h-full object-cover"
+                        />
                     </div>
-                </div>
-            ) : (
-                <div className="mx-auto max-w-4xl px-6 pb-8 pt-12">
-                    <Link
-                        href="/notes"
-                        className="mb-6 inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        <ArrowLeft size={16} />
-                        Back to Notes
-                    </Link>
-                    <h1 className="text-5xl font-bold">{note.title}</h1>
-                </div>
-            )}
+                )}
+                
+                <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
+                    {note.title}
+                </h1>
+            </div>
 
             {/* Note Content */}
             <div className="mx-auto mt-8 max-w-4xl px-6">

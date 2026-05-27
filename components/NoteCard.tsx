@@ -152,26 +152,25 @@ export default function NoteCard({
             onClick={onClick}
             className={`
                 group relative flex flex-col rounded-2xl border border-border/60 bg-card
-                hover:border-primary/30 hover:shadow-card-dark
+                hover:border-primary/20 hover:shadow-md
                 transition-all duration-300 ease-out overflow-hidden animate-fade-in ${staggerClass}
-                ${note.is_favorite ? 'border-amber-400/40 bg-gradient-to-br from-card to-amber-500/5' : ''}
+                ${note.is_favorite ? 'border-amber-400/60 bg-amber-500/[0.02]' : ''}
                 ${isDeleting ? 'opacity-50 scale-95 pointer-events-none' : ''}
             `}
         >
             {/* Favorite indicator stripe */}
             {note.is_favorite && (
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 to-orange-400" />
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-400" />
             )}
 
             {/* Image */}
             {note.image_url ? (
-                <div className="relative h-36 overflow-hidden bg-muted">
+                <div className="relative h-36 overflow-hidden bg-muted border-b border-border/40">
                     <img
                         src={note.image_url}
                         alt={`Attachment for ${note.title}`}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card/60 to-transparent" />
                 </div>
             ) : null}
 

@@ -99,32 +99,11 @@
         border-radius: var(--radius);
     }
 
-    /* Gradient text */
-    .gradient-text {
-        background: linear-gradient(135deg, hsl(243 75% 65%), hsl(200 80% 65%));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
     /* Sidebar */
     .sidebar {
         width: var(--sidebar-width);
         background: hsl(var(--sidebar-bg));
         border-right: 1px solid hsl(var(--sidebar-border));
-    }
-
-    /* Glow effects */
-    .glow-primary {
-        box-shadow:
-            0 0 20px hsl(243 75% 59% / 0.15),
-            0 0 40px hsl(243 75% 59% / 0.08);
-    }
-
-    .glow-hover:hover {
-        box-shadow:
-            0 0 24px hsl(243 75% 59% / 0.2),
-            0 4px 24px hsl(243 75% 59% / 0.1);
     }
 
     /* Scrollbar */
@@ -187,15 +166,6 @@
     }
 }
 
-@keyframes pulse-glow {
-    0%,
-    100% {
-        box-shadow: 0 0 8px hsl(243 75% 59% / 0.2);
-    }
-    50% {
-        box-shadow: 0 0 20px hsl(243 75% 59% / 0.4);
-    }
-}
 
 .animate-fade-in {
     animation: fadeIn 0.35s ease-out both;

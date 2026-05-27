@@ -213,7 +213,7 @@ export default function NotesList({
                     </p>
                     <Link
                         href="/notes/create"
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all shadow-glow-sm"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
                     >
                         Create your first note
                     </Link>
@@ -264,7 +264,7 @@ export default function NotesList({
 
             {/* macOS Style Dock for Minimized Windows (Bottom of NotesList.tsx) */}
             {windows.some((w) => w.isMinimized) && (
-                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-3 p-2.5 rounded-2xl bg-background/80 backdrop-blur-lg border border-border/50 shadow-2xl z-50">
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-3 p-2.5 rounded-2xl bg-background/80 backdrop-blur-lg border border-border/50 shadow-lg z-50">
                     {windows
                         .filter((w) => w.isMinimized)
                         .map((w) => (

@@ -87,17 +87,11 @@ export default {
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-primary":
-          "linear-gradient(135deg, hsl(243 75% 59%), hsl(200 80% 55%))",
-        "gradient-card":
-          "linear-gradient(135deg, hsl(var(--card)), hsl(var(--accent) / 0.2))",
       },
       boxShadow: {
-        glow: "0 0 20px hsl(243 75% 59% / 0.15), 0 0 40px hsl(243 75% 59% / 0.08)",
-        "glow-sm": "0 0 12px hsl(243 75% 59% / 0.2)",
         card: "0 2px 12px hsl(0 0% 0% / 0.08), 0 1px 3px hsl(0 0% 0% / 0.04)",
         "card-dark":
-          "0 4px 24px hsl(0 0% 0% / 0.3), 0 1px 4px hsl(0 0% 0% / 0.2)",
+          "0 2px 8px hsl(0 0% 0% / 0.05), 0 1px 3px hsl(0 0% 0% / 0.03)",
       },
     },
   },

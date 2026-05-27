@@ -46,10 +46,10 @@ export default function NoteWindow({
                     initial={{ opacity: 0, scale: 0.8, y: 50 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-card/95 shadow-2xl backdrop-blur-md"
+                    className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur-md"
                 >
                     {/* Window Header (Drag Handle) */}
-                    <div className="window-drag-handle flex flex-shrink-0 cursor-grab items-center justify-between border-b border-border bg-muted/50 px-3 py-2 active:cursor-grabbing">
+                    <div className="window-drag-handle flex flex-shrink-0 cursor-grab items-center justify-between border-b border-border bg-muted/30 px-3 py-2 active:cursor-grabbing">
                         {/* macOS style traffic lights */}
                         <div className="flex gap-2">
                             <button

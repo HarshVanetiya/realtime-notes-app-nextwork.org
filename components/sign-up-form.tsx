@@ -54,7 +54,7 @@ export function SignUpForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       {/* Brand */}
       <div className="flex flex-col items-center gap-3 mb-2">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
           <NotebookPen size={22} className="text-white" />
         </div>
         <div className="text-center">
@@ -64,7 +64,7 @@ export function SignUpForm({
       </div>
 
       {/* Card */}
-      <div className="rounded-2xl border border-border/60 bg-card shadow-card-dark p-6 space-y-5">
+      <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-6 space-y-5">
         <form onSubmit={handleSignUp} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -126,10 +126,10 @@ export function SignUpForm({
             </div>
           )}
 
-          <Button
+           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-semibold shadow-glow-sm transition-all"
+            className="w-full h-11 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-semibold transition-all"
           >
             {isLoading ? (
               <><Loader2 size={16} className="animate-spin mr-2" />Creating account...</>

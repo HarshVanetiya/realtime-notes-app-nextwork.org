@@ -30,11 +30,11 @@ export default function ErrorPage({
       <div className="relative w-full max-w-sm animate-scale-in">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
               <NotebookPen size={22} className="text-white" />
             </div>
           </div>
-          <div className="rounded-2xl border border-border/60 bg-card shadow-card-dark p-8 flex flex-col items-center gap-4 text-center">
+          <div className="rounded-2xl border border-border/60 bg-card shadow-sm p-8 flex flex-col items-center gap-4 text-center">
             <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center">
               <AlertTriangle size={30} className="text-destructive" />
             </div>
@@ -46,7 +46,7 @@ export default function ErrorPage({
             </div>
             <Link
               href="/auth/login"
-              className="mt-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all shadow-glow-sm"
+              className="mt-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all"
             >
               Back to sign in
             </Link>

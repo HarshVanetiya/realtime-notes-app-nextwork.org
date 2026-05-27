@@ -102,7 +102,7 @@ export default function NoteForm({ userId }: { userId: string }) {
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Card wrapper */}
-            <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-card-dark">
+            <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm">
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50 bg-muted/20">
                     <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -254,7 +254,7 @@ export default function NoteForm({ userId }: { userId: string }) {
                         flex items-center gap-2 px-6 py-2.5 rounded-xl
                         bg-primary text-primary-foreground text-sm font-semibold
                         hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100
-                        transition-all duration-150 shadow-glow-sm
+                        transition-all duration-150
                     "
                 >
                     {isSubmitting ? (
