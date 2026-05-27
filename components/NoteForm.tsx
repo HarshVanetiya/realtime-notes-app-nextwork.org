@@ -3,13 +3,8 @@
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import {
-    FileImage,
-    X,
-    Loader2,
-    NotebookPen,
-    Upload,
-} from 'lucide-react';
+import Editor from './Editor';
+import { FileImage, X, Loader2, NotebookPen, Upload } from 'lucide-react';
 
 export default function NoteForm({ userId }: { userId: string }) {
     const [title, setTitle] = useState('');
@@ -97,7 +92,7 @@ export default function NoteForm({ userId }: { userId: string }) {
             setSubmitError(
                 error instanceof Error
                     ? error.message
-                    : 'Unable to create note. Please try again.'
+                    : 'Unable to create note. Please try again.',
             );
         } finally {
             setIsSubmitting(false);
@@ -114,8 +109,12 @@ export default function NoteForm({ userId }: { userId: string }) {
                         <NotebookPen size={15} className="text-primary" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-foreground">New Note</p>
-                        <p className="text-xs text-muted-foreground">Add a title, content, and optional image</p>
+                        <p className="text-sm font-semibold text-foreground">
+                            New Note
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            Add a title, content, and optional image
+                        </p>
                     </div>
                 </div>
 
@@ -140,22 +139,14 @@ export default function NoteForm({ userId }: { userId: string }) {
                         />
                     </div>
 
-                    {/* Content */}
+                    {/* Content (BlockNote) */}
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             Content
                         </label>
-                        <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="Write your note here... (optional)"
-                            rows={6}
-                            className="
-                                w-full bg-muted/30 rounded-xl border border-border/50 px-4 py-3
-                                text-sm text-foreground placeholder:text-muted-foreground/50
-                                outline-none resize-none focus:border-primary/50 focus:bg-muted/50
-                                transition-all duration-200 leading-relaxed
-                            "
+                        <Editor
+                            userId={userId}
+                            onChange={(html) => setContent(html)}
                         />
                     </div>
 
@@ -185,28 +176,47 @@ export default function NoteForm({ userId }: { userId: string }) {
                             </div>
                         ) : (
                             <div
-                                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setIsDragOver(true);
+                                }}
                                 onDragLeave={() => setIsDragOver(false)}
                                 onDrop={handleDrop}
                                 onClick={() => fileInputRef.current?.click()}
                                 className={`
                                     flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed
                                     px-6 py-10 cursor-pointer transition-all duration-200
-                                    ${isDragOver
-                                        ? 'border-primary/60 bg-primary/5 scale-[1.01]'
-                                        : 'border-border/50 hover:border-primary/40 hover:bg-muted/30'
+                                    ${
+                                        isDragOver
+                                            ? 'border-primary/60 bg-primary/5 scale-[1.01]'
+                                            : 'border-border/50 hover:border-primary/40 hover:bg-muted/30'
                                     }
                                 `}
                             >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDragOver ? 'bg-primary/20' : 'bg-muted/60'}`}>
-                                    <Upload size={18} className={isDragOver ? 'text-primary' : 'text-muted-foreground'} />
+                                <div
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDragOver ? 'bg-primary/20' : 'bg-muted/60'}`}
+                                >
+                                    <Upload
+                                        size={18}
+                                        className={
+                                            isDragOver
+                                                ? 'text-primary'
+                                                : 'text-muted-foreground'
+                                        }
+                                    />
                                 </div>
                                 <div className="text-center">
                                     <p className="text-sm font-medium text-foreground">
-                                        {isDragOver ? 'Drop to attach' : 'Drag & drop an image'}
+                                        {isDragOver
+                                            ? 'Drop to attach'
+                                            : 'Drag & drop an image'}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        or <span className="text-primary font-medium">click to browse</span> — PNG, JPG, WEBP
+                                        or{' '}
+                                        <span className="text-primary font-medium">
+                                            click to browse
+                                        </span>{' '}
+                                        — PNG, JPG, WEBP
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
@@ -221,7 +231,9 @@ export default function NoteForm({ userId }: { userId: string }) {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
+                            onChange={(e) =>
+                                handleFileSelect(e.target.files?.[0] ?? null)
+                            }
                         />
                     </div>
                 </div>
