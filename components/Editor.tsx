@@ -42,12 +42,11 @@ export default function Editor({
         <div className="border-border-/50 min-h-[200px] w-full overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary/50">
             <BlockNoteView
                 editor={editor}
-                theme="dark" // The Mantine theme supports "light" or "dark" natively
-                onChange={async () => {
-                    const html = await editor.blocksToHTMLLossy(
-                        editor.document,
-                    );
-                    onChange(html);
+                theme="dark"
+                onChange={() => {
+                    // Save the exact lossless JSON state!
+                    const jsonString = JSON.stringify(editor.document);
+                    onChange(jsonString);
                 }}
             />
         </div>

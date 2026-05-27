@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Square, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { WindowState } from './NotesList';
+import NoteRenderer from './NoteRenderer';
 
 interface NoteWindowProps {
     window: WindowState;
@@ -105,11 +106,7 @@ export default function NoteWindow({
                                 className="mb-4 h-auto w-full rounded-lg object-cover"
                             />
                         )}
-                        <div
-                            dangerouslySetInnerHTML={{
-                                __html: window.note.content || '',
-                            }}
-                        />
+                        <NoteRenderer content={window.note.content} />
                     </div>
                 </motion.div>
             </AnimatePresence>

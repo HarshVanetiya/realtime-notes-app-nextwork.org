@@ -5,168 +5,245 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Light theme — clean white with blue-gray tones */
-    --background: 220 20% 97%;
-    --foreground: 224 40% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 40% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 40% 12%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 93%;
-    --secondary-foreground: 224 40% 12%;
-    --muted: 220 14% 93%;
-    --muted-foreground: 220 15% 50%;
-    --accent: 243 75% 95%;
-    --accent-foreground: 243 75% 40%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 88%;
-    --input: 220 13% 91%;
-    --ring: 243 75% 59%;
-    --radius: 0.75rem;
+    :root {
+        /* Light theme — clean white with blue-gray tones */
+        --background: 220 20% 97%;
+        --foreground: 224 40% 12%;
+        --card: 0 0% 100%;
+        --card-foreground: 224 40% 12%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 224 40% 12%;
+        --primary: 243 75% 59%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 220 14% 93%;
+        --secondary-foreground: 224 40% 12%;
+        --muted: 220 14% 93%;
+        --muted-foreground: 220 15% 50%;
+        --accent: 243 75% 95%;
+        --accent-foreground: 243 75% 40%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 220 13% 88%;
+        --input: 220 13% 91%;
+        --ring: 243 75% 59%;
+        --radius: 0.75rem;
 
-    /* Custom design tokens */
-    --sidebar-bg: 220 20% 97%;
-    --sidebar-border: 220 13% 88%;
-    --sidebar-width: 260px;
-    --glass-bg: 0 0% 100% / 0.7;
-    --glass-border: 220 13% 88% / 0.5;
-  }
+        /* Custom design tokens */
+        --sidebar-bg: 220 20% 97%;
+        --sidebar-border: 220 13% 88%;
+        --sidebar-width: 260px;
+        --glass-bg: 0 0% 100% / 0.7;
+        --glass-border: 220 13% 88% / 0.5;
+    }
 
-  .dark {
-    /* Dark theme — deep navy/indigo (NotebookLM-style) */
-    --background: 224 39% 7%;
-    --foreground: 213 31% 91%;
-    --card: 225 35% 10%;
-    --card-foreground: 213 31% 91%;
-    --popover: 225 35% 10%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 243 75% 65%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 225 28% 15%;
-    --secondary-foreground: 213 31% 85%;
-    --muted: 225 28% 14%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 243 50% 18%;
-    --accent-foreground: 243 75% 75%;
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 225 25% 18%;
-    --input: 225 25% 16%;
-    --ring: 243 75% 65%;
+    .dark {
+        /* Dark theme — deep navy/indigo (NotebookLM-style) */
+        --background: 224 39% 7%;
+        --foreground: 213 31% 91%;
+        --card: 225 35% 10%;
+        --card-foreground: 213 31% 91%;
+        --popover: 225 35% 10%;
+        --popover-foreground: 213 31% 91%;
+        --primary: 243 75% 65%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 225 28% 15%;
+        --secondary-foreground: 213 31% 85%;
+        --muted: 225 28% 14%;
+        --muted-foreground: 215 20% 55%;
+        --accent: 243 50% 18%;
+        --accent-foreground: 243 75% 75%;
+        --destructive: 0 70% 50%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 225 25% 18%;
+        --input: 225 25% 16%;
+        --ring: 243 75% 65%;
 
-    /* Custom design tokens */
-    --sidebar-bg: 225 39% 6%;
-    --sidebar-border: 225 25% 15%;
-    --glass-bg: 225 35% 10% / 0.8;
-    --glass-border: 225 25% 22% / 0.6;
-  }
+        /* Custom design tokens */
+        --sidebar-bg: 225 39% 6%;
+        --sidebar-border: 225 25% 15%;
+        --glass-bg: 225 35% 10% / 0.8;
+        --glass-border: 225 25% 22% / 0.6;
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-feature-settings: "cv11", "ss01";
-    -webkit-font-smoothing: antialiased;
-  }
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family:
+            'Inter',
+            -apple-system,
+            BlinkMacSystemFont,
+            sans-serif;
+        font-feature-settings: 'cv11', 'ss01';
+        -webkit-font-smoothing: antialiased;
+    }
 }
 
 @layer utilities {
-  /* Glassmorphism */
-  .glass {
-    background: hsl(var(--glass-bg));
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--glass-border));
-  }
+    /* Glassmorphism */
+    .glass {
+        background: hsl(var(--glass-bg));
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid hsl(var(--glass-border));
+    }
 
-  .glass-card {
-    background: hsl(var(--glass-bg));
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid hsl(var(--glass-border));
-    border-radius: var(--radius);
-  }
+    .glass-card {
+        background: hsl(var(--glass-bg));
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid hsl(var(--glass-border));
+        border-radius: var(--radius);
+    }
 
-  /* Gradient text */
-  .gradient-text {
-    background: linear-gradient(135deg, hsl(243 75% 65%), hsl(200 80% 65%));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+    /* Gradient text */
+    .gradient-text {
+        background: linear-gradient(135deg, hsl(243 75% 65%), hsl(200 80% 65%));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 
-  /* Sidebar */
-  .sidebar {
-    width: var(--sidebar-width);
-    background: hsl(var(--sidebar-bg));
-    border-right: 1px solid hsl(var(--sidebar-border));
-  }
+    /* Sidebar */
+    .sidebar {
+        width: var(--sidebar-width);
+        background: hsl(var(--sidebar-bg));
+        border-right: 1px solid hsl(var(--sidebar-border));
+    }
 
-  /* Glow effects */
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(243 75% 59% / 0.15), 0 0 40px hsl(243 75% 59% / 0.08);
-  }
+    /* Glow effects */
+    .glow-primary {
+        box-shadow:
+            0 0 20px hsl(243 75% 59% / 0.15),
+            0 0 40px hsl(243 75% 59% / 0.08);
+    }
 
-  .glow-hover:hover {
-    box-shadow: 0 0 24px hsl(243 75% 59% / 0.2), 0 4px 24px hsl(243 75% 59% / 0.1);
-  }
+    .glow-hover:hover {
+        box-shadow:
+            0 0 24px hsl(243 75% 59% / 0.2),
+            0 4px 24px hsl(243 75% 59% / 0.1);
+    }
 
-  /* Scrollbar */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
-  }
-  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
-  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 99px;
-  }
+    /* Scrollbar */
+    .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: hsl(var(--muted-foreground) / 0.3);
+        border-radius: 99px;
+    }
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeInLeft {
-  from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px hsl(243 75% 59% / 0.2); }
-  50%       { box-shadow: 0 0 20px hsl(243 75% 59% / 0.4); }
+    0%,
+    100% {
+        box-shadow: 0 0 8px hsl(243 75% 59% / 0.2);
+    }
+    50% {
+        box-shadow: 0 0 20px hsl(243 75% 59% / 0.4);
+    }
 }
 
-.animate-fade-in { animation: fadeIn 0.35s ease-out both; }
-.animate-fade-in-left { animation: fadeInLeft 0.35s ease-out both; }
-.animate-scale-in { animation: scaleIn 0.3s ease-out both; }
-.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-fade-in {
+    animation: fadeIn 0.35s ease-out both;
+}
+.animate-fade-in-left {
+    animation: fadeInLeft 0.35s ease-out both;
+}
+.animate-scale-in {
+    animation: scaleIn 0.3s ease-out both;
+}
+.animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
 
 /* Staggered animations for cards */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.10s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.20s; }
-.stagger-5 { animation-delay: 0.25s; }
-.stagger-6 { animation-delay: 0.30s; }
+.stagger-1 {
+    animation-delay: 0.05s;
+}
+.stagger-2 {
+    animation-delay: 0.1s;
+}
+.stagger-3 {
+    animation-delay: 0.15s;
+}
+.stagger-4 {
+    animation-delay: 0.2s;
+}
+.stagger-5 {
+    animation-delay: 0.25s;
+}
+.stagger-6 {
+    animation-delay: 0.3s;
+}
+
+/* Bulletproof fix to make BlockNote iframes clickable */
+.ProseMirror iframe,
+.ProseMirror video {
+    pointer-events: auto !important;
+    /* Forcing position relative and a massive z-index forces the video 
+     to sit ON TOP of any invisible click-shields ProseMirror generates */
+    position: relative !important;
+    z-index: 9999 !important;
+}
+
+/* Specifically target and disable BlockNote's internal embed overlay if it exists */
+.ProseMirror [data-content-type='video'] > div::after,
+.ProseMirror [data-content-type='audio'] > div::after {
+    content: none !important;
+    display: none !important;
+    pointer-events: none !important;
+}

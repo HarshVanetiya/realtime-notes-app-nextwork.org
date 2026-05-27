@@ -45,73 +45,37 @@ function escapeHtml(value: string) {
         .replaceAll("'", '&#39;');
 }
 
-function toPlainTextHtml(html: string) {
-    const text = html
-        .replace(/<[^>]*>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    return text ? `<p>${escapeHtml(text)}</p>` : '';
-}
+// Replace toPlainTextHtml and sanitizeNoteHtml with this:
+function extractPreviewText(content: string) {
+    if (!content) return '';
 
-function sanitizeNoteHtml(html: string) {
-    if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
-        return toPlainTextHtml(html);
-    }
+    try {
+        // 1. Try to parse it as our new BlockNote JSON
+        const blocks = JSON.parse(content);
+        let text = '';
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    function sanitizeNode(node: Node) {
-        if (node.nodeType !== Node.ELEMENT_NODE) {
-            return;
-        }
-
-        const element = node as HTMLElement;
-        const tagName = element.tagName.toLowerCase();
-        const href =
-            tagName === 'a' ? (element.getAttribute('href')?.trim() ?? '') : '';
-
-        if (!ALLOWED_HTML_TAGS.has(tagName)) {
-            const fragment = doc.createDocumentFragment();
-
-            while (element.firstChild) {
-                const child = element.firstChild;
-                sanitizeNode(child);
-                fragment.appendChild(child);
+        // Recursively dig through the blocks to find text
+        const extractText = (block: any) => {
+            if (block.content && Array.isArray(block.content)) {
+                block.content.forEach((c: any) => {
+                    if (c.type === 'text' && c.text) text += c.text + ' ';
+                });
             }
-
-            element.replaceWith(fragment);
-            return;
-        }
-
-        for (const attribute of Array.from(element.attributes)) {
-            element.removeAttribute(attribute.name);
-        }
-
-        if (tagName === 'a') {
-            const isSafeHref = /^(https?:|mailto:|tel:|\/|#)/i.test(href);
-
-            if (isSafeHref) {
-                element.setAttribute('href', href);
-                if (/^https?:/i.test(href)) {
-                    element.setAttribute('target', '_blank');
-                    element.setAttribute('rel', 'noreferrer noopener');
-                }
-            } else {
-                element.removeAttribute('href');
+            if (block.children && Array.isArray(block.children)) {
+                block.children.forEach(extractText);
             }
-        }
+        };
 
-        for (const child of Array.from(element.childNodes)) {
-            sanitizeNode(child);
-        }
+        blocks.forEach(extractText);
+        const finalText = text.trim();
+        return finalText ? `<p>${escapeHtml(finalText)}</p>` : '';
+    } catch {
+        // 2. If JSON.parse fails, it's the old HTML format!
+        if (typeof window === 'undefined') return '';
+        const doc = new DOMParser().parseFromString(content, 'text/html');
+        const text = doc.body.textContent || '';
+        return text.trim() ? `<p>${escapeHtml(text.trim())}</p>` : '';
     }
-
-    for (const child of Array.from(doc.body.childNodes)) {
-        sanitizeNode(child);
-    }
-
-    return doc.body.innerHTML;
 }
 
 function timeAgo(dateStr: string): string {
@@ -144,11 +108,13 @@ export default function NoteCard({
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
     const [renderedContent, setRenderedContent] = useState(() =>
-        note.content ? toPlainTextHtml(note.content) : '',
+        note.content ? extractPreviewText(note.content) : '',
     );
 
     useEffect(() => {
-        setRenderedContent(note.content ? sanitizeNoteHtml(note.content) : '');
+        setRenderedContent(
+            note.content ? extractPreviewText(note.content) : '',
+        );
     }, [note.content]);
 
     async function handleDelete() {

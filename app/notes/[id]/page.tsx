@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
+import NoteRenderer from '@/components/NoteRenderer';
 
 // 1. The inner component now receives the Promise directly and awaits it inside
 async function NoteContent({
@@ -67,10 +68,9 @@ async function NoteContent({
 
             {/* Note Content */}
             <div className="mx-auto mt-8 max-w-4xl px-6">
-                <div
-                    className="prose prose-invert max-w-none text-lg leading-relaxed text-foreground/90"
-                    dangerouslySetInnerHTML={{ __html: note.content || '' }}
-                />
+                <div className="mx-auto mt-8 max-w-4xl px-6">
+                    <NoteRenderer content={note.content} />
+                </div>
             </div>
         </>
     );
