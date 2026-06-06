@@ -2,10 +2,11 @@
 
 import { Rnd } from 'react-rnd';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Minus, Square, X } from 'lucide-react';
+import { Minus, Square, X, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { WindowState } from './NotesList';
 import NoteRenderer from './NoteRenderer';
+import EditNoteModal from './EditNoteModal';
 
 interface NoteWindowProps {
     window: WindowState;
@@ -102,8 +103,14 @@ export default function NoteWindow({
                             )}
                             <span>{window.note.title}</span>
                         </div>
-                        <div className="w-[60px]"></div>{' '}
-                        {/* Spacer to balance flex-between */}
+                        {/* Actions */}
+                        <div className="flex w-[60px] justify-end items-center gap-2 pr-1">
+                            <EditNoteModal initialData={window.note}>
+                                <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-foreground/10" title="Edit Note">
+                                    <Pencil size={13} />
+                                </button>
+                            </EditNoteModal>
+                        </div>
                     </div>
 
                     {/* Window Content */}

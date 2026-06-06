@@ -5,8 +5,10 @@ import { BlockNoteView } from '@blocknote/mantine';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 import { useMemo } from 'react';
+import { useTheme } from 'next-themes';
 
 export default function NoteRenderer({ content }: { content: string | null }) {
+    const { resolvedTheme } = useTheme();
     // We use useMemo to only initialize the editor once with the correct data
     const editor = useCreateBlockNote({}, []);
 
@@ -37,7 +39,7 @@ export default function NoteRenderer({ content }: { content: string | null }) {
             {/* -ml-12 offsets BlockNote's default left padding so it aligns flush with your UI */}
             <BlockNoteView
                 editor={editor}
-                theme="dark"
+                theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
                 editable={false} // This makes it read-only!
             />
         </div>

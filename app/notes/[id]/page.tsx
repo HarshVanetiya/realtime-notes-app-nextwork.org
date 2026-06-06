@@ -2,9 +2,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Pencil } from 'lucide-react';
 import { Suspense } from 'react';
 import NoteRenderer from '@/components/NoteRenderer';
+import EditNoteModal from '@/components/EditNoteModal';
 
 // 1. The inner component now receives the Promise directly and awaits it inside
 async function NoteContent({
@@ -47,9 +48,17 @@ async function NoteContent({
                     </div>
                 )}
                 
-                <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
-                    {note.title}
-                </h1>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
+                        {note.title}
+                    </h1>
+                    <EditNoteModal initialData={note}>
+                        <button className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium text-sm">
+                            <Pencil size={16} />
+                            Edit Note
+                        </button>
+                    </EditNoteModal>
+                </div>
             </div>
 
             {/* Note Content */}

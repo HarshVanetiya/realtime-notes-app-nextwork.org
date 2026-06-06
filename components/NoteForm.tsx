@@ -6,11 +6,18 @@ import { useRouter } from 'next/navigation';
 import Editor from './Editor';
 import { FileImage, X, Loader2, NotebookPen, Upload } from 'lucide-react';
 
-export default function NoteForm({ userId, onSuccess, onCancel }: { userId: string, onSuccess?: () => void, onCancel?: () => void }) {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+export type NoteData = {
+    id: string;
+    title: string;
+    content: string | null;
+    image_url: string | null;
+};
+
+export default function NoteForm({ userId, onSuccess, onCancel, initialData }: { userId: string, onSuccess?: () => void, onCancel?: () => void, initialData?: NoteData }) {
+    const [title, setTitle] = useState(initialData?.title || '');
+    const [content, setContent] = useState(initialData?.content || '');
     const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null);
     const [isDragOver, setIsDragOver] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -49,7 +56,7 @@ export default function NoteForm({ userId, onSuccess, onCancel }: { userId: stri
         setIsSubmitting(true);
 
         try {
-            let imageUrl: string | null = null;
+            let imageUrl = initialData?.image_url || null;
 
             if (imageFile) {
                 const fileExt = imageFile.name.split('.').pop();
@@ -68,21 +75,33 @@ export default function NoteForm({ userId, onSuccess, onCancel }: { userId: stri
                     .getPublicUrl(filePath);
 
                 imageUrl = urlData.publicUrl;
+            } else if (imagePreview === null) {
+                // If they explicitly removed the image
+                imageUrl = null;
             }
 
-            const { error } = await supabase
-                .from('notes')
-                .insert({
-                    user_id: userId,
-                    title: title.trim(),
-                    content: content.trim() || null,
-                    image_url: imageUrl,
-                })
-                .select('id')
-                .single();
+            if (initialData?.id) {
+                const { error } = await supabase
+                    .from('notes')
+                    .update({
+                        title: title.trim(),
+                        content: content.trim() || null,
+                        image_url: imageUrl,
+                    })
+                    .eq('id', initialData.id);
 
-            if (error) {
-                throw error;
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('notes')
+                    .insert({
+                        user_id: userId,
+                        title: title.trim(),
+                        content: content.trim() || null,
+                        image_url: imageUrl,
+                    });
+
+                if (error) throw error;
             }
 
             if (onSuccess) {
@@ -115,7 +134,7 @@ export default function NoteForm({ userId, onSuccess, onCancel }: { userId: stri
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-foreground">
-                            New Note
+                            {initialData ? 'Edit Note' : 'New Note'}
                         </p>
                         <p className="text-xs text-muted-foreground">
                             Add a title, content, and optional image
@@ -151,6 +170,7 @@ export default function NoteForm({ userId, onSuccess, onCancel }: { userId: stri
                         </label>
                         <Editor
                             userId={userId}
+                            initialContent={initialData?.content || undefined}
                             onChange={(html) => setContent(html)}
                         />
                     </div>
@@ -269,7 +289,7 @@ export default function NoteForm({ userId, onSuccess, onCancel }: { userId: stri
                         ) : (
                             <>
                                 <NotebookPen size={15} />
-                                Save Note
+                                {initialData ? 'Update Note' : 'Save Note'}
                             </>
                         )}
                     </button>

@@ -5,6 +5,8 @@ import { BlockNoteView } from '@blocknote/mantine'; // Changed to mantine!
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css'; // Changed to mantine!
 import { createClient } from '@/lib/supabase/client';
+import { useMemo } from 'react';
+import { useTheme } from 'next-themes';
 
 interface EditorProps {
     onChange: (html: string) => void;
@@ -18,6 +20,7 @@ export default function Editor({
     userId,
 }: EditorProps) {
     const supabase = createClient();
+    const { resolvedTheme } = useTheme();
 
     const editor = useCreateBlockNote({
         uploadFile: async (file: File) => {
@@ -38,11 +41,26 @@ export default function Editor({
         },
     });
 
+    useMemo(() => {
+        if (!initialContent) return;
+
+        try {
+            const blocks = JSON.parse(initialContent);
+            editor.replaceBlocks(editor.document, blocks);
+        } catch (e) {
+            async function loadOldHtml() {
+                const blocks = await editor.tryParseHTMLToBlocks(initialContent as string);
+                editor.replaceBlocks(editor.document, blocks);
+            }
+            loadOldHtml();
+        }
+    }, [initialContent, editor]);
+
     return (
-        <div className="border-border-/50 min-h-[200px] w-full overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary/50">
+        <div className="border-border/50 min-h-[200px] w-full overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary/50">
             <BlockNoteView
                 editor={editor}
-                theme="dark"
+                theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
                 onChange={() => {
                     // Save the exact lossless JSON state!
                     const jsonString = JSON.stringify(editor.document);
