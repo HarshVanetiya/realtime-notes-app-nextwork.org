@@ -1,8 +1,9 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { Star, Trash2, ImageIcon } from 'lucide-react';
+import { Star, Trash2, ImageIcon, Edit2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import EditNoteModal from './EditNoteModal';
 
 type Note = {
     id: string;
@@ -187,6 +188,15 @@ export default function NoteCard({
                         {note.title}
                     </h3>
                     <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {/* Edit button */}
+                        <EditNoteModal initialData={note}>
+                            <button
+                                title="Edit note"
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
+                            >
+                                <Edit2 size={15} />
+                            </button>
+                        </EditNoteModal>
                         {/* Favorite button */}
                         <button
                             onClick={(e) => {

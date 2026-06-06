@@ -44,7 +44,10 @@ export default function EditNoteModal({ children, open: controlledOpen, onOpenCh
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {children && (
-                <span onClick={() => setOpen(true)}>
+                <span onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(true);
+                }}>
                     {children}
                 </span>
             )}

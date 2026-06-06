@@ -256,23 +256,25 @@ export default function NotesList({
                                             zIndex: topZIndex + 1,
                                         })
                                     }
-                                    className="group relative w-14 h-14 rounded-full border border-border/60 flex items-center justify-center hover:-translate-y-2 hover:scale-110 transition-all duration-300 shadow-xl overflow-hidden bg-background/80 backdrop-blur-xl animate-in zoom-in-50 fade-in"
+                                    className="group relative w-14 h-14 rounded-full border border-border/60 flex items-center justify-center hover:-translate-y-2 hover:scale-110 transition-all duration-300 shadow-xl bg-background/80 backdrop-blur-xl animate-in zoom-in-50 fade-in"
                                 >
-                                    {w.note.image_url ? (
-                                        <img
-                                            src={w.note.image_url}
-                                            alt={w.note.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <BookOpen
-                                            size={20}
-                                            className="text-primary/70 group-hover:text-primary transition-colors"
-                                        />
-                                    )}
+                                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                                        {w.note.image_url ? (
+                                            <img
+                                                src={w.note.image_url}
+                                                alt={w.note.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <BookOpen
+                                                size={20}
+                                                className="text-primary/70 group-hover:text-primary transition-colors"
+                                            />
+                                        )}
+                                    </div>
 
                                     {/* Tooltip on hover */}
-                                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-foreground/90 backdrop-blur-sm text-background text-xs font-medium px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap shadow-lg">
+                                    <span className="absolute -top-12 left-1/2 -translate-x-1/2 bg-foreground/90 backdrop-blur-sm text-background text-xs font-medium px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap shadow-lg z-50">
                                         {w.note.title}
                                     </span>
                                 </button>
