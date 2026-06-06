@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import NoteCard from './NoteCard';
 import { BookOpen, Star } from 'lucide-react';
-import Link from 'next/link';
 import NoteWindow from './NoteWindow';
+import CreateNoteModal from './CreateNoteModal';
 
 // At the top of NotesList.tsx
 export type WindowState = {
@@ -211,12 +211,13 @@ export default function NotesList({
                         Start capturing your thoughts, ideas, and anything worth
                         remembering.
                     </p>
-                    <Link
-                        href="/notes/create"
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
-                    >
-                        Create your first note
-                    </Link>
+                    <CreateNoteModal>
+                        <button
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
+                        >
+                            Create your first note
+                        </button>
+                    </CreateNoteModal>
                 </div>
             ) : displayedNotes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl mt-4">

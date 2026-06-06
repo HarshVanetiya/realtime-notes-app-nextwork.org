@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Editor from './Editor';
 import { FileImage, X, Loader2, NotebookPen, Upload } from 'lucide-react';
 
-export default function NoteForm({ userId }: { userId: string }) {
+export default function NoteForm({ userId, onSuccess, onCancel }: { userId: string, onSuccess?: () => void, onCancel?: () => void }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -85,8 +85,13 @@ export default function NoteForm({ userId }: { userId: string }) {
                 throw error;
             }
 
-            router.replace('/notes');
-            router.refresh();
+            if (onSuccess) {
+                router.refresh();
+                onSuccess();
+            } else {
+                router.replace('/notes');
+                router.refresh();
+            }
         } catch (error) {
             console.error('Error creating note:', error);
             setSubmitError(
@@ -237,46 +242,46 @@ export default function NoteForm({ userId }: { userId: string }) {
                         />
                     </div>
                 </div>
-            </div>
 
-            {submitError ? (
-                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    {submitError}
+                {submitError ? (
+                    <div className="mx-6 mb-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        {submitError}
+                    </div>
+                ) : null}
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 px-6 py-4 border-t border-border/50 bg-muted/10">
+                    <button
+                        type="submit"
+                        disabled={isSubmitting || !title.trim()}
+                        className="
+                            flex items-center gap-2 px-6 py-2.5 rounded-xl
+                            bg-primary text-primary-foreground text-sm font-semibold
+                            hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100
+                            transition-all duration-150
+                        "
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 size={15} className="animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <NotebookPen size={15} />
+                                Save Note
+                            </>
+                        )}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onCancel ? onCancel() : router.push('/notes')}
+                        disabled={isSubmitting}
+                        className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition-all duration-150"
+                    >
+                        Cancel
+                    </button>
                 </div>
-            ) : null}
-
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-                <button
-                    type="submit"
-                    disabled={isSubmitting || !title.trim()}
-                    className="
-                        flex items-center gap-2 px-6 py-2.5 rounded-xl
-                        bg-primary text-primary-foreground text-sm font-semibold
-                        hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100
-                        transition-all duration-150
-                    "
-                >
-                    {isSubmitting ? (
-                        <>
-                            <Loader2 size={15} className="animate-spin" />
-                            Saving...
-                        </>
-                    ) : (
-                        <>
-                            <NotebookPen size={15} />
-                            Save Note
-                        </>
-                    )}
-                </button>
-                <button
-                    type="button"
-                    onClick={() => router.push('/notes')}
-                    disabled={isSubmitting}
-                    className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition-all duration-150"
-                >
-                    Cancel
-                </button>
             </div>
         </form>
     );

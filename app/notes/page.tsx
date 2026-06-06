@@ -2,8 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import NotesList from '@/components/NotesList';
 import AppHeader from '@/components/app-header';
-import Link from 'next/link';
-import { FilePlus } from 'lucide-react';
+import NewNoteButton from '@/components/NewNoteButton';
 import { Suspense } from 'react';
 
 async function NotesContent() {
@@ -32,15 +31,7 @@ async function NotesContent() {
             <AppHeader
                 title="My Notes"
                 subtitle={`${noteCount} ${noteCount === 1 ? 'note' : 'notes'} in your workspace`}
-                action={
-                    <Link
-                        href="/notes/create"
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-95 transition-all duration-150"
-                    >
-                        <FilePlus size={15} />
-                        <span className="hidden sm:inline">New Note</span>
-                    </Link>
-                }
+                action={<NewNoteButton />}
             />
             <main className="flex-1 p-6 overflow-auto scrollbar-thin">
                 <NotesList initialNotes={notes ?? []} userId={userId} />

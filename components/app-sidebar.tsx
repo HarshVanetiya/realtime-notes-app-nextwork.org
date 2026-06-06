@@ -16,12 +16,14 @@ import {
 } from 'lucide-react';
 
 import Image from 'next/image';
+import CreateNoteModal from './CreateNoteModal';
 import notesIcon from '../public/notes-icon.svg';
 
 const navItems = [
     { href: '/notes', label: 'My Notes', icon: BookOpen, exact: true },
     {
-        href: '/notes/create',
+        href: '#',
+        action: 'create-note',
         label: 'Create Note',
         icon: FilePlus,
         exact: false,
@@ -41,6 +43,8 @@ export default function AppSidebar() {
     const [isOpen, setIsOpen] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     useEffect(() => {
         async function getUser() {
@@ -64,9 +68,74 @@ export default function AppSidebar() {
     };
 
     const initials = userEmail ? userEmail.charAt(0).toUpperCase() : '?';
-    const [isHovered, setIsHovered] = useState(false);
 
-    const SidebarContent = ({ collapsed }: { collapsed?: boolean }) => (
+    const handleCreateNoteClick = () => {
+        setIsHovered(false);
+        setIsProfileOpen(false);
+        setIsOpen(false);
+        setIsCreateModalOpen(true);
+    };
+
+    const renderNavItems = (collapsed?: boolean) => (
+        <>
+            {navItems.map((item) => {
+                const active = item.action ? false : isActive(item.href, item.exact ?? false);
+                const Icon = item.icon;
+                const itemContent = (
+                    <>
+                        {active && (
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
+                        )}
+                        <Icon
+                            size={17}
+                            className={`flex-shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
+                        />
+                        <span
+                            className={`transition-all duration-300 truncate ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
+                        >
+                            {item.label}
+                        </span>
+                    </>
+                );
+
+                const itemClassName = `
+                    group flex items-center rounded-xl text-sm font-medium
+                    transition-all duration-200 relative w-full text-left
+                    ${
+                        active
+                            ? ' text-primary shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                    }
+                    ${collapsed ? 'gap-0 px-2 py-2.5 justify-center' : 'gap-3 px-3 py-2.5'}
+                `;
+
+                if (item.action === 'create-note') {
+                    return (
+                        <button
+                            key={item.label}
+                            className={itemClassName}
+                            onClick={handleCreateNoteClick}
+                        >
+                            {itemContent}
+                        </button>
+                    );
+                }
+
+                return (
+                    <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className={itemClassName}
+                    >
+                        {itemContent}
+                    </Link>
+                );
+            })}
+        </>
+    );
+
+    const renderSidebarContent = (collapsed?: boolean) => (
         <div className="flex flex-col h-full overflow-hidden">
             {/* Brand */}
             <div className="flex items-center gap-2.5 px-4 py-6 border-b border-border/50 flex-shrink-0 bg-white/30 ">
@@ -93,40 +162,7 @@ export default function AppSidebar() {
                 >
                     Workspace
                 </p>
-                {navItems.map((item) => {
-                    const active = isActive(item.href, item.exact ?? false);
-                    const Icon = item.icon;
-                    return (
-                        <Link
-                            key={item.label}
-                            href={item.href}
-                            onClick={() => setIsOpen(false)}
-                            className={`
-                                group flex items-center rounded-xl text-sm font-medium
-                                transition-all duration-200 relative
-                                ${
-                                    active
-                                        ? ' text-primary shadow-sm'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                                }
-                                ${collapsed ? 'gap-0 px-2 py-2.5 justify-center' : 'gap-3 px-3 py-2.5'}
-                            `}
-                        >
-                            {active && (
-                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
-                            )}
-                            <Icon
-                                size={17}
-                                className={`flex-shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
-                            />
-                            <span
-                                className={`transition-all duration-300 truncate ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
-                            >
-                                {item.label}
-                            </span>
-                        </Link>
-                    );
-                })}
+                {renderNavItems(collapsed)}
             </nav>
 
             {/* User + Logout */}
@@ -206,7 +242,7 @@ export default function AppSidebar() {
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
             >
-                <SidebarContent collapsed={false} />
+                {renderSidebarContent(false)}
             </aside>
 
             {/* Desktop sidebar container (reserves space so layout doesn't shift) */}
@@ -226,9 +262,15 @@ export default function AppSidebar() {
                         ${isHovered ? 'w-64 shadow-lg' : 'w-[70px]'}
                     `}
                 >
-                    <SidebarContent collapsed={!isHovered} />
+                    {renderSidebarContent(!isHovered)}
                 </div>
             </aside>
+
+            {/* Create Note Modal - rendered at top level, outside sidebar */}
+            <CreateNoteModal
+                open={isCreateModalOpen}
+                onOpenChange={setIsCreateModalOpen}
+            />
         </>
     );
 }
