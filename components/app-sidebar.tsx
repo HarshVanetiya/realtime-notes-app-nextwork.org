@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -31,17 +31,18 @@ const navItems = [
         icon: FilePlus,
         exact: false,
     },
-    // {
-    //     href: '/notes?filter=favorites',
-    //     label: 'Favorites',
-    //     icon: Star,
-    //     exact: false,
-    //     isFavorites: true,
-    // },
+    {
+        href: '/notes?filter=favorites',
+        label: 'Favorites',
+        icon: Star,
+        exact: false,
+        isFavorites: true,
+    },
 ];
 
 export default function AppSidebar() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const router = useRouter();
     const { theme, resolvedTheme, setTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
@@ -66,7 +67,13 @@ export default function AppSidebar() {
     };
 
     const isActive = (href: string, exact: boolean, isFavorites?: boolean) => {
-        if (isFavorites) return false; // favorites handled separately
+        if (isFavorites) {
+            return searchParams.get('filter') === 'favorites';
+        }
+        // If it's the 'My Notes' link, make sure it's not active if we are in favorites view
+        if (href === '/notes' && searchParams.get('filter') === 'favorites') {
+            return false;
+        }
         if (exact) return pathname === href;
         return pathname.startsWith(href);
     };
@@ -83,7 +90,7 @@ export default function AppSidebar() {
     const renderNavItems = (collapsed?: boolean) => (
         <>
             {navItems.map((item) => {
-                const active = item.action ? false : isActive(item.href, item.exact ?? false);
+                const active = item.action ? false : isActive(item.href, item.exact ?? false, item.isFavorites);
                 const Icon = item.icon;
                 const itemContent = (
                     <>

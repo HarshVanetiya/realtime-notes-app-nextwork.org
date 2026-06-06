@@ -128,7 +128,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
             {/* Card wrapper */}
             <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm">
                 {/* Card header */}
-                <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50 bg-muted/20">
+                {/* <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50 bg-muted/20">
                     <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
                         <NotebookPen size={15} className="text-primary" />
                     </div>
@@ -140,7 +140,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                             Add a title, content, and optional image
                         </p>
                     </div>
-                </div>
+                </div> */}
 
                 <div className="p-6 space-y-5">
                     {/* Title */}

@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import NotesList from '@/components/NotesList';
-import AppHeader from '@/components/app-header';
-import NewNoteButton from '@/components/NewNoteButton';
 import { Suspense } from 'react';
 
 async function NotesContent() {
@@ -28,11 +26,6 @@ async function NotesContent() {
 
     return (
         <>
-            <AppHeader
-                title="My Notes"
-                subtitle={`${noteCount} ${noteCount === 1 ? 'note' : 'notes'} in your workspace`}
-                action={<NewNoteButton />}
-            />
             <main className="flex-1 p-6 overflow-auto scrollbar-thin">
                 <NotesList initialNotes={notes ?? []} userId={userId} />
             </main>
