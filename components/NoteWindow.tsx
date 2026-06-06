@@ -46,10 +46,10 @@ export default function NoteWindow({
                     initial={{ opacity: 0, scale: 0.8, y: 50 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-[#14213d]/70 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+                    className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border/50 bg-background/90 shadow-xl backdrop-blur-2xl"
                 >
                     {/* Window Header (Drag Handle) */}
-                    <div className="window-drag-handle flex flex-shrink-0 cursor-grab items-center justify-between border-b border-white/10 bg-black/20 px-3 py-2 active:cursor-grabbing">
+                    <div className="window-drag-handle flex flex-shrink-0 cursor-grab items-center justify-between border-b border-border/50 bg-muted/50 px-3 py-2 active:cursor-grabbing">
                         {/* macOS style traffic lights */}
                         <div className="flex w-[60px] items-center gap-2">
                             <button
@@ -97,7 +97,7 @@ export default function NoteWindow({
                                 <img
                                     src={window.note.image_url}
                                     alt="App Icon"
-                                    className="h-5 w-5 rounded object-cover shadow-sm ring-1 ring-white/20"
+                                    className="h-5 w-5 rounded object-cover shadow-sm ring-1 ring-border"
                                 />
                             )}
                             <span>{window.note.title}</span>

@@ -157,8 +157,8 @@ export default function NoteCard({
         <div
             onClick={onClick}
             className={`
-                group relative flex flex-col rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md
-                hover:border-white/30 hover:bg-white/20 hover:shadow-lg
+                group relative flex flex-col rounded-2xl border border-border/50 bg-background/50 backdrop-blur-md
+                hover:border-border/80 hover:bg-foreground/5 hover:shadow-lg
                 transition-all duration-300 ease-out overflow-hidden animate-fade-in ${staggerClass}
                 ${note.is_favorite ? 'border-amber-400/30 bg-amber-500/10' : ''}
                 ${isDeleting ? 'opacity-50 scale-95 pointer-events-none' : ''}

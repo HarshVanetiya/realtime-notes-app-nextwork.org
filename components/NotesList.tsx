@@ -153,7 +153,7 @@ export default function NotesList({
     return (
         <div className="animate-fade-in">
             {/* Filter tabs */}
-            <div className="flex items-center gap-1 p-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl w-fit mb-6 shadow-sm">
+            <div className="flex items-center gap-1 p-1 bg-background/50 backdrop-blur-md border border-border/50 rounded-xl w-fit mb-6 shadow-sm">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const active = filter === tab.id;
@@ -166,8 +166,8 @@ export default function NotesList({
                                 transition-all duration-200
                                 ${
                                     active
-                                        ? 'bg-white/20 text-white shadow-sm'
-                                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                                        ? 'bg-foreground/10 text-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
                                 }
                             `}
                         >
@@ -197,11 +197,11 @@ export default function NotesList({
 
             {/* Notes grid */}
             {notes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl mt-4">
-                    <div className="w-20 h-20 rounded-3xl bg-white/10 border border-white/20 shadow-sm flex items-center justify-center mb-6">
+                <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in bg-background/50 backdrop-blur-sm border border-border/40 rounded-3xl mt-4">
+                    <div className="w-20 h-20 rounded-3xl bg-foreground/5 border border-border/50 shadow-sm flex items-center justify-center mb-6">
                         <BookOpen
                             size={36}
-                            className="text-white/60"
+                            className="text-muted-foreground"
                         />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -220,8 +220,8 @@ export default function NotesList({
                     </CreateNoteModal>
                 </div>
             ) : displayedNotes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl mt-4">
-                    <div className="w-20 h-20 rounded-3xl bg-white/10 border border-white/20 shadow-sm flex items-center justify-center mb-6">
+                <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in bg-background/50 backdrop-blur-sm border border-border/40 rounded-3xl mt-4">
+                    <div className="w-20 h-20 rounded-3xl bg-foreground/5 border border-border/50 shadow-sm flex items-center justify-center mb-6">
                         <Star size={36} className="text-amber-400/80" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">

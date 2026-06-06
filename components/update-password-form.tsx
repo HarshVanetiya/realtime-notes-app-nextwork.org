@@ -40,7 +40,7 @@ export function UpdatePasswordForm({
       {/* Brand */}
       <div className="flex flex-col items-center gap-3 mb-2">
         <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
-          <NotebookPen size={22} className="text-white" />
+          <NotebookPen size={22} className="text-primary-foreground" />
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">Set new password</h1>

@@ -6,63 +6,80 @@
 
 @layer base {
     :root {
-        /* Light theme — White background, Black text, Orange primary */
-        --background: 0 0% 100%;
-        --foreground: 0 0% 0%;
-        --card: 0 0% 100%;
-        --card-foreground: 0 0% 0%;
+        /* Premium Light Theme — Light bluish background, slate text, vibrant blue primary */
+        --background: 216 40% 96%; /* Very light blue background */
+        --foreground: 222 47% 11%; /* Deep slate text */
+        
+        --card: 0 0% 100%; /* Pure white cards */
+        --card-foreground: 222 47% 11%;
+        
         --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 0%;
-        --primary: 37 98% 53%;
-        --primary-foreground: 0 0% 0%;
-        --secondary: 221 51% 16%;
-        --secondary-foreground: 0 0% 100%;
-        --muted: 0 0% 90%;
-        --muted-foreground: 221 51% 40%;
-        --accent: 221 51% 16%;
-        --accent-foreground: 0 0% 100%;
-        --destructive: 0 100% 50%;
+        --popover-foreground: 222 47% 11%;
+        
+        --primary: 221 83% 53%; /* Premium vibrant blue */
+        --primary-foreground: 0 0% 100%;
+        
+        --secondary: 214 32% 91%;
+        --secondary-foreground: 222 47% 11%;
+        
+        --muted: 214 32% 91%;
+        --muted-foreground: 215 16% 47%;
+        
+        --accent: 214 32% 91%;
+        --accent-foreground: 222 47% 11%;
+        
+        --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 100%;
-        --border: 0 0% 90%;
-        --input: 0 0% 90%;
-        --ring: 37 98% 53%;
-        --radius: 0.75rem;
+        
+        --border: 214 32% 86%;
+        --input: 214 32% 86%;
+        --ring: 221 83% 53%;
+        
+        --radius: 1rem;
 
         /* Custom design tokens */
-        --sidebar-bg: 0 0% 95%;
-        --sidebar-border: 0 0% 90%;
+        --sidebar-bg: 216 40% 95%;
+        --sidebar-border: 214 32% 86%;
         --sidebar-width: 260px;
-        --glass-bg: 0 0% 100% / 0.8;
-        --glass-border: 0 0% 90% / 0.8;
+        --glass-bg: 216 40% 96% / 0.5;
+        --glass-border: 214 32% 86% / 0.5;
     }
 
     .dark {
-        /* Dark theme — Black background, White text, Orange primary */
-        --background: 0 0% 0%;
-        --foreground: 0 0% 100%;
-        --card: 221 51% 16%;
-        --card-foreground: 0 0% 100%;
-        --popover: 221 51% 16%;
-        --popover-foreground: 0 0% 100%;
-        --primary: 37 98% 53%;
+        /* Dark theme — Black background, White text, Orange primary (keeping orange here as it looks great on dark) */
+        --background: 224 71% 4%; /* Super dark blue/black */
+        --foreground: 210 40% 98%;
+        
+        --card: 222 47% 11%;
+        --card-foreground: 210 40% 98%;
+        
+        --popover: 222 47% 11%;
+        --popover-foreground: 210 40% 98%;
+        
+        --primary: 37 98% 53%; /* Orange */
         --primary-foreground: 0 0% 0%;
-        --secondary: 221 51% 25%;
-        --secondary-foreground: 0 0% 100%;
-        --muted: 221 51% 16%;
-        --muted-foreground: 0 0% 70%;
-        --accent: 221 51% 25%;
-        --accent-foreground: 0 0% 100%;
-        --destructive: 0 100% 50%;
-        --destructive-foreground: 0 0% 100%;
-        --border: 221 51% 25%;
-        --input: 221 51% 16%;
+        
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
         --ring: 37 98% 53%;
 
         /* Custom design tokens */
-        --sidebar-bg: 0 0% 0%;
-        --sidebar-border: 221 51% 16%;
-        --glass-bg: 221 51% 16% / 0.8;
-        --glass-border: 221 51% 25% / 0.6;
+        --sidebar-bg: 224 71% 4%;
+        --sidebar-border: 217.2 32.6% 17.5%;
+        --glass-bg: 222 47% 11% / 0.4;
+        --glass-border: 217.2 32.6% 17.5% / 0.5;
     }
 }
 

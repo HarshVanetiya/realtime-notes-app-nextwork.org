@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import {
     BookOpen,
     FilePlus,
@@ -13,6 +14,8 @@ import {
     Menu,
     X,
     NotebookPen,
+    Sun,
+    Moon,
 } from 'lucide-react';
 
 import Image from 'next/image';
@@ -40,6 +43,7 @@ const navItems = [
 export default function AppSidebar() {
     const pathname = usePathname();
     const router = useRouter();
+    const { theme, resolvedTheme, setTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -138,7 +142,7 @@ export default function AppSidebar() {
     const renderSidebarContent = (collapsed?: boolean) => (
         <div className="flex flex-col h-full overflow-hidden">
             {/* Brand */}
-            <div className="flex items-center gap-2.5 px-4 py-6 border-b border-border/50 flex-shrink-0 bg-white/30 ">
+            <div className="flex items-center gap-2.5 px-4 py-6 border-b border-border/50 flex-shrink-0 bg-foreground/5 dark:bg-white/10">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent">
                     <Image
                         src={notesIcon}
@@ -173,7 +177,7 @@ export default function AppSidebar() {
                     onClick={() =>
                         !collapsed && setIsProfileOpen(!isProfileOpen)
                     }
-                    className={`flex items-center rounded-xl hover:bg-white/5 transition-colors cursor-pointer group ${collapsed ? 'gap-0 p-0 cursor-default' : 'gap-3 px-2 py-2'}`}
+                    className={`flex items-center rounded-xl hover:bg-foreground/5 transition-colors cursor-pointer group ${collapsed ? 'gap-0 p-0 cursor-default' : 'gap-3 px-2 py-2'}`}
                 >
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0 border border-primary/20">
                         {initials}
@@ -194,8 +198,8 @@ export default function AppSidebar() {
 
                 {/* Dropdown Menu */}
                 {!collapsed && isProfileOpen && (
-                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg p-2 flex flex-col gap-1 z-50">
-                        <div className="px-2 py-2 border-b border-white/10 mb-5">
+                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-background/90 backdrop-blur-xl border border-border rounded-xl shadow-lg p-2 flex flex-col gap-1 z-50">
+                        <div className="px-2 py-2 border-b border-border/50 mb-2">
                             <p className="text-xs text-muted-foreground">
                                 Logged in as
                             </p>
@@ -203,6 +207,13 @@ export default function AppSidebar() {
                                 {userEmail ?? 'Loading...'}
                             </p>
                         </div>
+                        <button
+                            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                            className="flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-foreground/5 rounded-lg transition-colors text-left font-medium"
+                        >
+                            {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                            {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+                        </button>
                         <button
                             onClick={handleLogout}
                             className="flex items-center gap-2 px-2 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors text-left font-medium"
@@ -237,7 +248,7 @@ export default function AppSidebar() {
             {/* Mobile sidebar */}
             <aside
                 className={`
-          lg:hidden fixed left-0 top-0 z-40 h-full w-64 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl border-r
+          lg:hidden fixed left-0 top-0 z-40 h-full w-64 bg-background/80 backdrop-blur-md border border-border/50 rounded-xl border-r
           transition-transform duration-300 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
@@ -257,7 +268,7 @@ export default function AppSidebar() {
                 {/* Floating expandable menu */}
                 <div
                     className={`
-                        fixed left-0 top-0 h-screen bg-white/10 backdrop-blur-md border border-white/20 border-r flex flex-col
+                        fixed left-0 top-0 h-screen bg-background/80 backdrop-blur-md border border-border/50 border-r flex flex-col
                         transition-all duration-300 ease-in-out z-40 overflow-hidden
                         ${isHovered ? 'w-64 shadow-lg' : 'w-[70px]'}
                     `}
