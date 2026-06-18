@@ -37,7 +37,7 @@ export default function NotesList({
     const searchParams = useSearchParams();
     const router = useRouter();
     const isFavoritesView = searchParams.get('filter') === 'favorites';
-    
+
     const [notes, setNotes] = useState<Note[]>(initialNotes);
     const supabase = createClient();
 
@@ -87,10 +87,9 @@ export default function NotesList({
         setTopZIndex((z) => z + 1);
     }
 
-    const displayedNotes =
-        isFavoritesView
-            ? notes.filter((note) => note.is_favorite)
-            : notes;
+    const displayedNotes = isFavoritesView
+        ? notes.filter((note) => note.is_favorite)
+        : notes;
 
     useEffect(() => {
         const channel = supabase
@@ -153,13 +152,11 @@ export default function NotesList({
                             No notes yet
                         </h3>
                         <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                            Start capturing your thoughts, ideas, and anything worth
-                            remembering.
+                            Start capturing your thoughts, ideas, and anything
+                            worth remembering.
                         </p>
                         <CreateNoteModal>
-                            <button
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
-                            >
+                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
                                 Create your first note
                             </button>
                         </CreateNoteModal>
@@ -221,11 +218,14 @@ export default function NotesList({
                             100% { transform: translateX(400%) skewX(-12deg); }
                         }
                     `}</style>
-                    
-                    <Search size={20} className="text-muted-foreground group-focus-within:text-primary group-hover:scale-110 transition-all duration-300 flex-shrink-0 relative z-10" />
+
+                    <Search
+                        size={20}
+                        className="text-muted-foreground group-focus-within:text-primary group-hover:scale-110 transition-all duration-300 flex-shrink-0 relative z-10"
+                    />
                     <input
                         type="text"
-                        placeholder="Search notes..."
+                        placeholder="AI Feature in progress..."
                         className="bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none flex-1 min-w-0 h-full relative z-10"
                     />
                 </div>
@@ -235,7 +235,10 @@ export default function NotesList({
                     <button className="group relative flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.15] hover:-translate-y-1 active:scale-95 transition-all duration-400 overflow-hidden">
                         {/* Inner glow on hover */}
                         <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full blur-sm"></div>
-                        <Plus size={26} className="stroke-[2.5] relative z-10 group-hover:rotate-90 transition-transform duration-500 ease-in-out" />
+                        <Plus
+                            size={26}
+                            className="stroke-[2.5] relative z-10 group-hover:rotate-90 transition-transform duration-500 ease-in-out"
+                        />
                     </button>
                 </CreateNoteModal>
 
@@ -244,7 +247,7 @@ export default function NotesList({
                     <div className="flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-300">
                         {/* Divider */}
                         <div className="w-px h-8 bg-border/80 mx-1 rounded-full"></div>
-                        
+
                         {windows
                             .filter((w) => w.isMinimized)
                             .map((w) => (
