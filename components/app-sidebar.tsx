@@ -10,10 +10,10 @@ import {
     BookOpen,
     FilePlus,
     Star,
+    SquareKanban,
     LogOut,
     Menu,
     X,
-    NotebookPen,
     Sun,
     Moon,
 } from 'lucide-react';
@@ -38,13 +38,20 @@ const navItems = [
         exact: false,
         isFavorites: true,
     },
+    {
+        href: 'https://todoist-five-brown.vercel.app/',
+        label: 'Kanban Board',
+        icon: SquareKanban,
+        exact: false,
+        external: true,
+    },
 ];
 
 export default function AppSidebar() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { theme, resolvedTheme, setTheme } = useTheme();
+    const { resolvedTheme, setTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -129,6 +136,21 @@ export default function AppSidebar() {
                         >
                             {itemContent}
                         </button>
+                    );
+                }
+
+                if (item.external) {
+                    return (
+                        <a
+                            key={item.label}
+                            href={item.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => setIsOpen(false)}
+                            className={itemClassName}
+                        >
+                            {itemContent}
+                        </a>
                     );
                 }
 
