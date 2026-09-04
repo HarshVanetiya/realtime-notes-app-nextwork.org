@@ -15,6 +15,22 @@ const Editor = dynamic(() => import('./Editor'), {
     ),
 });
 
+/**
+ * Shared by CreateNoteModal and EditNoteModal.
+ *
+ * The width MUST be declared in the `sm:` modifier group. DialogContent merges
+ * its base classes through tailwind-merge, and the base includes `sm:max-w-lg`;
+ * a plain `max-w-*` here is a different modifier group, so it is not treated as
+ * a conflict, survives the merge, and then loses to `sm:max-w-lg` in the
+ * compiled CSS. That is how the modal ended up 512px wide while the code said
+ * `max-w-2xl`.
+ *
+ * `w-[calc(100%-2rem)]` restores the phone gutter: tailwind-merge dropped the
+ * base `max-w-[calc(100%-2rem)]` as a conflict, leaving the modal edge-to-edge.
+ */
+export const NOTE_DIALOG_CLASS =
+    'w-[calc(100%-2rem)] sm:w-full sm:max-w-[min(60vw,896px)] p-0 border-none bg-transparent shadow-none gap-0';
+
 export type NoteData = {
     id: string;
     title: string;
@@ -153,7 +169,11 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
     const titleNearLimit = title.length > TITLE_MAX_LENGTH - 40;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="w-full min-w-0 space-y-6">
+            {/* min-w-0: DialogContent is a grid, and a grid item defaults to
+                `min-width: auto` = min-content. Without this, one unbreakable
+                token anywhere in the editor (a URL, a long identifier in a code
+                block) widens the whole form past the dialog and clips it. */}
             {/* Card wrapper */}
             <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm">
                 <div className="p-4 sm:p-6 space-y-5">

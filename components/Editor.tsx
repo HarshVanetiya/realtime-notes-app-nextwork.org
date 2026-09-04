@@ -57,7 +57,7 @@ export default function Editor({
     }, [initialContent, editor]);
 
     return (
-        <div className="border-border/50 min-h-[200px] w-full overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary/50">
+        <div className="border-border/50 min-h-[200px] w-full min-w-0 overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary/50">
             <BlockNoteView
                 editor={editor}
                 theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
