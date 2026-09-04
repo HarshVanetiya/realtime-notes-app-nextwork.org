@@ -243,3 +243,23 @@
 .bn-editor {
     background-color: transparent !important;
 }
+
+/* BlockNote ships its own horizontal padding on the editor body. The read-only
+   renderer used to cancel it with a -ml-12 negative margin, which pushed
+   content off the left edge on narrow screens. Zero the padding instead. */
+.read-only-editor .bn-editor {
+    padding-inline: 0 !important;
+}
+
+/* Respect the OS "reduce motion" setting: this UI is animation-heavy
+   (window transitions, staggered cards, an infinite shine loop). */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

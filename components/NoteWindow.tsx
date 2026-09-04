@@ -58,6 +58,8 @@ export default function NoteWindow({
                                     e.stopPropagation();
                                     closeWindow(window.id);
                                 }}
+                                title="Close"
+                                aria-label="Close window"
                                 className="group flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 hover:bg-red-600"
                             >
                                 <X
@@ -72,6 +74,8 @@ export default function NoteWindow({
                                         isMinimized: true,
                                     });
                                 }}
+                                title="Minimize"
+                                aria-label="Minimize window"
                                 className="group flex h-3.5 w-3.5 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-600"
                             >
                                 <Minus
@@ -84,6 +88,8 @@ export default function NoteWindow({
                                     e.stopPropagation();
                                     router.push(`/notes/${window.note.id}`);
                                 }}
+                                title="Open full page"
+                                aria-label="Open full page"
                                 className="group flex h-3.5 w-3.5 items-center justify-center rounded-full bg-green-500 hover:bg-green-600"
                             >
                                 <Square
@@ -93,15 +99,15 @@ export default function NoteWindow({
                             </button>
                         </div>
                         {/* Title and App Icon */}
-                        <div className="flex select-none items-center gap-2 truncate px-4 text-xs font-semibold text-[#e5e5e5]">
+                        <div className="flex min-w-0 flex-1 select-none items-center justify-center gap-2 px-4 text-xs font-semibold text-foreground">
                             {window.note.image_url && (
                                 <img
                                     src={window.note.image_url}
-                                    alt="App Icon"
-                                    className="h-5 w-5 rounded object-cover shadow-sm ring-1 ring-border"
+                                    alt=""
+                                    className="h-5 w-5 flex-shrink-0 rounded object-cover shadow-sm ring-1 ring-border"
                                 />
                             )}
-                            <span>{window.note.title}</span>
+                            <span className="truncate">{window.note.title}</span>
                         </div>
                         {/* Actions */}
                         <div className="flex w-[60px] justify-end items-center gap-2 pr-1">
@@ -115,7 +121,7 @@ export default function NoteWindow({
 
                     {/* Window Content */}
                     <div className="custom-scrollbar flex-1 cursor-text overflow-y-auto">
-                        <div className="flex h-full w-full justify-center pt-4">
+                        <div className="flex h-full w-full min-w-0 justify-center px-4 pt-4 [&_*]:break-words">
                             <NoteRenderer content={window.note.content} />
                         </div>
                     </div>

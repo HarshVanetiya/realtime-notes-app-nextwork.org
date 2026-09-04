@@ -18,7 +18,7 @@ export default function NotesLayout({
                 <AppSidebar />
             </Suspense>
 
-            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-w-0 flex-1 flex-col overflow-x-clip pt-14 lg:pt-0">
                 {children}
             </div>
         </div>

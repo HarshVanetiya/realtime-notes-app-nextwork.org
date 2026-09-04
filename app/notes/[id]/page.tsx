@@ -29,7 +29,7 @@ async function NoteContent({
     return (
         <>
             {/* Cover Banner and Header Section */}
-            <div className="mx-auto max-w-4xl px-6 pb-4 pt-12">
+            <div className="mx-auto max-w-4xl px-4 pb-4 pt-6 sm:px-6 sm:pt-12">
                 <Link
                     href="/notes"
                     className="mb-6 inline-flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground text-sm font-medium"
@@ -39,7 +39,7 @@ async function NoteContent({
                 </Link>
                 
                 {note.image_url && (
-                    <div className="relative w-full h-[250px] sm:h-[350px] overflow-hidden rounded-2xl border border-border/60 bg-muted mb-8">
+                    <div className="relative w-full h-[180px] sm:h-[280px] md:h-[350px] overflow-hidden rounded-2xl border border-border/60 bg-muted mb-8">
                         <img
                             src={note.image_url}
                             alt={note.title}
@@ -49,7 +49,7 @@ async function NoteContent({
                 )}
                 
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
+                    <h1 className="min-w-0 break-words [overflow-wrap:anywhere] text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
                         {note.title}
                     </h1>
                     <EditNoteModal initialData={note}>
@@ -62,10 +62,8 @@ async function NoteContent({
             </div>
 
             {/* Note Content */}
-            <div className="mx-auto mt-8 max-w-4xl px-6">
-                <div className="mx-auto mt-8 max-w-4xl px-6">
-                    <NoteRenderer content={note.content} />
-                </div>
+            <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6">
+                <NoteRenderer content={note.content} />
             </div>
         </>
     );

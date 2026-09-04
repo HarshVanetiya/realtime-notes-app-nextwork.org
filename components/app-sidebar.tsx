@@ -56,7 +56,12 @@ export default function AppSidebar() {
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    // Hover doesn't exist on touch devices. Without a click-to-pin the rail
+    // stays collapsed forever on a tablet, and logout / theme become unreachable.
+    const [isPinned, setIsPinned] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    const isExpanded = isHovered || isPinned;
 
     useEffect(() => {
         async function getUser() {
@@ -66,6 +71,29 @@ export default function AppSidebar() {
         }
         getUser();
     }, []);
+
+    // Close the mobile drawer whenever navigation happens.
+    useEffect(() => {
+        setIsOpen(false);
+    }, [pathname, searchParams]);
+
+    // While the drawer is open: lock the page behind it and allow Escape out.
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsOpen(false);
+        };
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [isOpen]);
 
     const handleLogout = async () => {
         const supabase = createClient();
@@ -89,6 +117,7 @@ export default function AppSidebar() {
 
     const handleCreateNoteClick = () => {
         setIsHovered(false);
+        setIsPinned(false);
         setIsProfileOpen(false);
         setIsOpen(false);
         setIsCreateModalOpen(true);
@@ -124,7 +153,7 @@ export default function AppSidebar() {
                             ? ' text-primary shadow-sm'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                     }
-                    ${collapsed ? 'gap-0 px-2 py-2.5 justify-center' : 'gap-3 px-3 py-2.5'}
+                    ${collapsed ? 'gap-0 px-2 py-3 justify-center' : 'gap-3 px-3 py-3'}
                 `;
 
                 if (item.action === 'create-note') {
@@ -168,24 +197,53 @@ export default function AppSidebar() {
         </>
     );
 
-    const renderSidebarContent = (collapsed?: boolean) => (
+    const renderSidebarContent = (
+        collapsed?: boolean,
+        options?: { onClose?: () => void; onToggle?: () => void },
+    ) => (
         <div className="flex flex-col h-full overflow-hidden">
             {/* Brand */}
             <div className="flex items-center gap-2.5 px-4 py-6 border-b border-border/50 flex-shrink-0 bg-foreground/5 dark:bg-white/10">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent">
-                    <Image
-                        src={notesIcon}
-                        alt="Slate Logo"
-                        className="w-full h-full object-contain"
-                    />
-                </div>
+                {options?.onToggle ? (
+                    <button
+                        onClick={options.onToggle}
+                        aria-label={
+                            collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+                        }
+                        aria-expanded={!collapsed}
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent transition-transform hover:scale-105"
+                    >
+                        <Image
+                            src={notesIcon}
+                            alt="Slate Logo"
+                            className="w-full h-full object-contain"
+                        />
+                    </button>
+                ) : (
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent">
+                        <Image
+                            src={notesIcon}
+                            alt="Slate Logo"
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+                )}
                 <div
-                    className={`transition-all duration-300 flex flex-col justify-center min-w-0 ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
+                    className={`transition-all duration-300 flex flex-col justify-center min-w-0 flex-1 ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
                 >
                     <h1 className="font-black text-2xl text-foreground tracking-tighter truncate lowercase flex items-baseline">
                         slate<span className="text-primary font-black">.</span>
                     </h1>
                 </div>
+                {options?.onClose && (
+                    <button
+                        onClick={options.onClose}
+                        aria-label="Close menu"
+                        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                    >
+                        <X size={18} />
+                    </button>
+                )}
             </div>
 
             {/* Navigation */}
@@ -202,11 +260,13 @@ export default function AppSidebar() {
             <div
                 className={`py-4 border-t border-border/50 flex-shrink-0 overflow-visible transition-all duration-300 relative ${collapsed ? 'px-[19px]' : 'px-4'}`}
             >
-                <div
+                <button
                     onClick={() =>
                         !collapsed && setIsProfileOpen(!isProfileOpen)
                     }
-                    className={`flex items-center rounded-xl hover:bg-foreground/5 transition-colors cursor-pointer group ${collapsed ? 'gap-0 p-0 cursor-default' : 'gap-3 px-2 py-2'}`}
+                    aria-label="Profile menu"
+                    aria-expanded={isProfileOpen}
+                    className={`flex w-full items-center rounded-xl hover:bg-foreground/5 transition-colors group ${collapsed ? 'gap-0 p-0 cursor-default' : 'gap-3 px-2 py-2'}`}
                 >
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0 border border-primary/20">
                         {initials}
@@ -214,16 +274,13 @@ export default function AppSidebar() {
                     <div
                         className={`transition-all duration-300 flex-1 min-w-0 flex items-center justify-between ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
                     >
-                        <div className="min-w-0 pr-2">
+                        <div className="min-w-0 pr-2 text-left">
                             <p className="text-sm font-medium text-foreground truncate">
                                 Profile
                             </p>
-                            {/* <p className="text-xs text-green-500 truncate flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Online
-                            </p> */}
                         </div>
                     </div>
-                </div>
+                </button>
 
                 {/* Dropdown Menu */}
                 {!collapsed && isProfileOpen && (
@@ -238,14 +295,14 @@ export default function AppSidebar() {
                         </div>
                         <button
                             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                            className="flex items-center gap-2 px-2 py-2 text-sm text-foreground hover:bg-foreground/5 rounded-lg transition-colors text-left font-medium"
+                            className="flex items-center gap-2 px-2 py-2.5 text-sm text-foreground hover:bg-foreground/5 rounded-lg transition-colors text-left font-medium"
                         >
                             {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                             {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="flex items-center gap-2 px-2 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors text-left font-medium"
+                            className="flex items-center gap-2 px-2 py-2.5 text-sm text-destructive hover:bg-destructive/10 dark:text-red-400 dark:hover:text-red-300 rounded-lg transition-colors text-left font-medium"
                         >
                             <LogOut size={16} />
                             Log out
@@ -258,13 +315,18 @@ export default function AppSidebar() {
 
     return (
         <>
-            {/* Mobile hamburger */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl bg-card border border-border shadow-card text-foreground"
-            >
-                {isOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
+            {/* Mobile hamburger — hidden while the drawer is open, where it
+                would otherwise sit on top of the drawer's own brand header. */}
+            {!isOpen && (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    aria-label="Open menu"
+                    aria-expanded={false}
+                    className="lg:hidden fixed top-3 left-3 z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-card border border-border shadow-card text-foreground"
+                >
+                    <Menu size={18} />
+                </button>
+            )}
 
             {/* Mobile overlay */}
             {isOpen && (
@@ -277,21 +339,25 @@ export default function AppSidebar() {
             {/* Mobile sidebar */}
             <aside
                 className={`
-          lg:hidden fixed left-0 top-0 z-40 h-full w-64 bg-background/80 backdrop-blur-md border border-border/50 rounded-xl border-r
+          lg:hidden fixed left-0 top-0 z-40 h-full w-[min(18rem,85vw)] bg-background/95 backdrop-blur-md border-r border-border/50
           transition-transform duration-300 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
             >
-                {renderSidebarContent(false)}
+                {renderSidebarContent(false, {
+                    onClose: () => setIsOpen(false),
+                })}
             </aside>
 
             {/* Desktop sidebar container (reserves space so layout doesn't shift) */}
             <aside
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => {
+                    if (isPinned) return;
                     setIsProfileOpen(false);
                     setIsHovered(false);
                 }}
+                onFocus={() => setIsHovered(true)}
                 className="hidden lg:block relative h-screen transition-all duration-300 ease-in-out flex-shrink-0 w-[70px]"
             >
                 {/* Floating expandable menu */}
@@ -299,10 +365,17 @@ export default function AppSidebar() {
                     className={`
                         fixed left-0 top-0 h-screen bg-background/80 backdrop-blur-md border border-border/50 border-r flex flex-col
                         transition-all duration-300 ease-in-out z-40 overflow-hidden
-                        ${isHovered ? 'w-64 shadow-lg' : 'w-[70px]'}
+                        ${isExpanded ? 'w-64 shadow-lg' : 'w-[70px]'}
                     `}
                 >
-                    {renderSidebarContent(!isHovered)}
+                    {renderSidebarContent(!isExpanded, {
+                        onToggle: () => {
+                            const next = !isPinned;
+                            setIsPinned(next);
+                            setIsHovered(next);
+                            if (!next) setIsProfileOpen(false);
+                        },
+                    })}
                 </div>
             </aside>
 
