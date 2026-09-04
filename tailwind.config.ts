@@ -77,6 +77,10 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        shine: {
+          "0%": { transform: "translateX(0) skewX(-12deg)" },
+          "100%": { transform: "translateX(400%) skewX(-12deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -84,6 +88,7 @@ export default {
         "fade-in": "fadeIn 0.35s ease-out both",
         "scale-in": "scaleIn 0.3s ease-out both",
         shimmer: "shimmer 2s linear infinite",
+        shine: "shine 1.5s ease-in-out infinite",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

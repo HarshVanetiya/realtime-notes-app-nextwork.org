@@ -1,9 +1,18 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { Star, Trash2, ImageIcon, Edit2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { extractPlainText } from '@/lib/note-text';
+import { Star, Trash2, ImageIcon, Edit2, Loader2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import EditNoteModal from './EditNoteModal';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 type Note = {
     id: string;
@@ -13,77 +22,6 @@ type Note = {
     is_favorite: boolean;
     created_at: string;
 };
-
-const ALLOWED_HTML_TAGS = new Set([
-    'a',
-    'b',
-    'blockquote',
-    'br',
-    'code',
-    'em',
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'i',
-    'li',
-    'ol',
-    'p',
-    'pre',
-    'strong',
-    'u',
-    'ul',
-]);
-
-function escapeHtml(value: string) {
-    return value
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-}
-
-// Replace toPlainTextHtml and sanitizeNoteHtml with this:
-function extractPreviewText(content: string) {
-    if (!content) return '';
-
-    try {
-        // 1. Try to parse it as our new BlockNote JSON
-        const blocks = JSON.parse(content);
-        let text = '';
-
-        // Recursively dig through the blocks to find text
-        const extractText = (block: any) => {
-            if (block.content && Array.isArray(block.content)) {
-                block.content.forEach((c: any) => {
-                    if (c.type === 'text' && c.text) text += c.text + ' ';
-                });
-            }
-            if (block.children && Array.isArray(block.children)) {
-                block.children.forEach(extractText);
-            }
-        };
-
-        blocks.forEach(extractText);
-        const finalText = text.trim();
-        return finalText ? `<p>${escapeHtml(finalText)}</p>` : '';
-    } catch {
-        // 2. If JSON.parse fails, it's the old HTML format!
-        // We strip tags using a regex to produce matching output on both server and client.
-        const plainText = content.replace(/<[^>]*>/g, '');
-        const decodedText = plainText
-            .replaceAll('&amp;', '&')
-            .replaceAll('&lt;', '<')
-            .replaceAll('&gt;', '>')
-            .replaceAll('&quot;', '"')
-            .replaceAll('&#39;', "'");
-        const finalText = decodedText.trim();
-        return finalText ? `<p>${escapeHtml(finalText)}</p>` : '';
-    }
-}
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -100,6 +38,16 @@ function timeAgo(dateStr: string): string {
     });
 }
 
+// Actions are revealed on hover only where hovering actually exists. On touch
+// there is no hover, so they stay visible — otherwise they are invisible but
+// still tappable, which makes Delete a trap.
+const HOVER_REVEAL =
+    'opacity-100 focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100';
+
+// Comfortable thumb target on touch, unchanged density on desktop.
+const ACTION_BUTTON =
+    'flex items-center justify-center h-10 w-10 lg:h-7 lg:w-7 rounded-lg transition-all duration-200';
+
 export default function NoteCard({
     note,
     onDelete,
@@ -109,20 +57,17 @@ export default function NoteCard({
     note: Note;
     onDelete: (id: string) => void;
     index?: number;
-    onClick?: () => void; // New type definition
+    onClick?: () => void;
 }) {
     const supabase = createClient();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
-    const [renderedContent, setRenderedContent] = useState(() =>
-        note.content ? extractPreviewText(note.content) : '',
-    );
+    const [confirmOpen, setConfirmOpen] = useState(false);
 
-    useEffect(() => {
-        setRenderedContent(
-            note.content ? extractPreviewText(note.content) : '',
-        );
-    }, [note.content]);
+    const previewText = useMemo(
+        () => extractPlainText(note.content),
+        [note.content],
+    );
 
     async function handleDelete() {
         setIsDeleting(true);
@@ -137,6 +82,7 @@ export default function NoteCard({
             return;
         }
 
+        setConfirmOpen(false);
         onDelete(note.id);
     }
 
@@ -173,10 +119,12 @@ export default function NoteCard({
             {/* Image */}
             {note.image_url ? (
                 <div className="relative h-36 overflow-hidden bg-muted border-b border-border/40">
-                    <img
+                    <Image
                         src={note.image_url}
                         alt={`Attachment for ${note.title}`}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 </div>
             ) : null}
@@ -184,15 +132,18 @@ export default function NoteCard({
             {/* Body */}
             <div className="flex-1 p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-foreground leading-snug line-clamp-2 flex-1">
+                    <h3 className="font-semibold text-foreground leading-snug line-clamp-2 flex-1 min-w-0 break-words [overflow-wrap:anywhere]">
                         {note.title}
                     </h3>
-                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div
+                        className={`flex items-center gap-0.5 lg:gap-1 flex-shrink-0 transition-opacity duration-200 ${HOVER_REVEAL}`}
+                    >
                         {/* Edit button */}
                         <EditNoteModal initialData={note}>
                             <button
                                 title="Edit note"
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
+                                aria-label={`Edit ${note.title}`}
+                                className={`${ACTION_BUTTON} text-muted-foreground hover:text-primary hover:bg-primary/10`}
                             >
                                 <Edit2 size={15} />
                             </button>
@@ -200,18 +151,18 @@ export default function NoteCard({
                         {/* Favorite button */}
                         <button
                             onClick={(e) => {
-                                console.log('toggle');
                                 e.stopPropagation();
                                 void toggleFavorite();
                             }}
                             disabled={isTogglingFav}
+                            aria-pressed={note.is_favorite}
                             title={
                                 note.is_favorite
                                     ? 'Remove from favorites'
                                     : 'Add to favorites'
                             }
                             className={`
-                                p-1.5 rounded-lg transition-all duration-200
+                                ${ACTION_BUTTON}
                                 ${
                                     note.is_favorite
                                         ? 'text-amber-400 hover:text-amber-500 hover:bg-amber-400/10'
@@ -231,19 +182,21 @@ export default function NoteCard({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                void handleDelete();
+                                setConfirmOpen(true);
                             }}
                             title="Delete note"
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
+                            aria-label={`Delete ${note.title}`}
+                            className={`${ACTION_BUTTON} text-muted-foreground hover:text-destructive hover:bg-destructive/10`}
                         >
                             <Trash2 size={15} />
                         </button>
                     </div>
                 </div>
 
-                {/* Always show star if favorited even when not hovering */}
+                {/* Standing favorite marker, for the hover-reveal case only —
+                    on touch the action row above is always visible and would collide. */}
                 {note.is_favorite && (
-                    <div className="absolute top-4 right-4 opacity-100 group-hover:opacity-0 transition-opacity">
+                    <div className="absolute top-4 right-4 hidden [@media(hover:hover)]:block opacity-100 group-hover:opacity-0 transition-opacity">
                         <Star
                             size={14}
                             className="text-amber-400"
@@ -252,24 +205,14 @@ export default function NoteCard({
                     </div>
                 )}
 
-                {renderedContent && (
-                    <div
-                        className="
-                            mb-3 max-h-[5.25rem] overflow-hidden text-sm leading-relaxed text-muted-foreground
-                            [&>*]:mb-2 [&>*:last-child]:mb-0
-                            [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2
-                            [&_blockquote]:border-l-2 [&_blockquote]:border-border/70 [&_blockquote]:pl-3 [&_blockquote]:italic
-                            [&_code]:rounded [&_code]:bg-muted/70 [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs
-                            [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:font-medium
-                            [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:overflow-hidden [&_pre]:rounded-lg [&_pre]:bg-muted/70 [&_pre]:p-3 [&_pre]:text-xs
-                            [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5
-                        "
-                        dangerouslySetInnerHTML={{ __html: renderedContent }}
-                    />
+                {previewText && (
+                    <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground break-words [overflow-wrap:anywhere]">
+                        {previewText}
+                    </p>
                 )}
 
-                {/* No image indicator */}
-                {!note.image_url && !renderedContent && (
+                {/* No content indicator */}
+                {!note.image_url && !previewText && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground/50 mb-3">
                         <ImageIcon size={12} />
                         <span>No content</span>
@@ -278,16 +221,61 @@ export default function NoteCard({
             </div>
 
             {/* Footer */}
-            <div className="px-4 pb-4 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground/70" suppressHydrationWarning>
+            <div className="px-4 pb-4 flex items-center justify-between gap-2">
+                <span
+                    className="text-xs text-muted-foreground/70"
+                    suppressHydrationWarning
+                >
                     {timeAgo(note.created_at)}
                 </span>
                 {note.is_favorite && (
-                    <span className="text-xs font-medium text-amber-500/80 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-medium text-amber-500/80 bg-amber-400/10 px-2 py-0.5 rounded-full flex-shrink-0">
                         Favorite
                     </span>
                 )}
             </div>
+
+            {/* Delete confirmation — deleting a note is irreversible. */}
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent
+                    className="sm:max-w-md"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <DialogTitle>Delete note?</DialogTitle>
+                    <DialogDescription className="break-words [overflow-wrap:anywhere]">
+                        &ldquo;{note.title}&rdquo; will be permanently deleted.
+                        This can&apos;t be undone.
+                    </DialogDescription>
+                    <DialogFooter className="mt-2">
+                        <button
+                            type="button"
+                            onClick={() => setConfirmOpen(false)}
+                            disabled={isDeleting}
+                            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void handleDelete()}
+                            disabled={isDeleting}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 size={15} className="animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash2 size={15} />
+                                    Delete
+                                </>
+                            )}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

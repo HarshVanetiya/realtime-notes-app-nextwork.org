@@ -10,6 +10,11 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Without this, `npm run lint` walks build output and reports thousands of
+  // errors from generated bundles whenever a build exists on disk.
+  {
+    ignores: [".next/**", "node_modules/**", "out/**", "build/**", "next-env.d.ts"],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 

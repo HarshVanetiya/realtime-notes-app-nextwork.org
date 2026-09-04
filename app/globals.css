@@ -243,3 +243,48 @@
 .bn-editor {
     background-color: transparent !important;
 }
+
+/* BlockNote ships its own horizontal padding on the editor body. The read-only
+   renderer used to cancel it with a -ml-12 negative margin, which pushed
+   content off the left edge on narrow screens. Zero the padding instead. */
+.read-only-editor .bn-editor {
+    padding-inline: 0 !important;
+}
+
+/* Map BlockNote's own palette onto the app's theme tokens. Those tokens are
+   already driven by the `.dark` class on <html>, so rendered note bodies follow
+   the app's light/dark themes with no JavaScript — which is what lets the
+   read-only renderer be a Server Component.
+   The two-class selector outranks BlockNote's own `.bn-root` defaults
+   regardless of stylesheet order. */
+.read-only-editor .bn-root {
+    --bn-colors-editor-text: hsl(var(--foreground));
+    --bn-colors-editor-background: transparent;
+    --bn-colors-menu-text: hsl(var(--foreground));
+    --bn-colors-menu-background: hsl(var(--popover));
+    --bn-colors-hovered-background: hsl(var(--muted));
+    --bn-colors-border: hsl(var(--border));
+    --bn-colors-side-menu: hsl(var(--muted-foreground));
+    --bn-colors-shadow: hsl(var(--border));
+}
+
+/* BlockNote sets `white-space: pre-wrap`, which wraps at spaces but lets a
+   single long token (a pasted URL, a run-on string) run off the edge. Phase 1
+   fixed this for card titles and previews; note bodies need it too. */
+.read-only-editor .bn-inline-content,
+.read-only-editor .bn-block-content {
+    overflow-wrap: anywhere;
+}
+
+/* Respect the OS "reduce motion" setting: this UI is animation-heavy
+   (window transitions, staggered cards, an infinite shine loop). */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

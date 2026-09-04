@@ -35,8 +35,9 @@ export default function NoteRenderer({ content }: { content: string | null }) {
     if (!content) return null;
 
     return (
-        <div className="read-only-editor -ml-12 w-full">
-            {/* -ml-12 offsets BlockNote's default left padding so it aligns flush with your UI */}
+        <div className="read-only-editor w-full min-w-0">
+            {/* BlockNote's own editor padding is zeroed in globals.css so this
+                aligns flush with the surrounding UI without a negative margin. */}
             <BlockNoteView
                 editor={editor}
                 theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
