@@ -1,10 +1,19 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Editor from './Editor';
 import { FileImage, X, Loader2, NotebookPen, ImagePlus } from 'lucide-react';
+
+const Editor = dynamic(() => import('./Editor'), {
+    ssr: false,
+    loading: () => (
+        <div className="flex min-h-[200px] w-full items-center justify-center rounded-xl border border-border/50 bg-card">
+            <Loader2 size={18} className="animate-spin text-muted-foreground" />
+        </div>
+    ),
+});
 
 export type NoteData = {
     id: string;
@@ -200,6 +209,9 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
 
                         {imagePreview ? (
                             <div className="relative rounded-xl overflow-hidden border border-border/50 group">
+                                {/* Local FileReader data: URL — next/image
+                                    cannot optimize these. */}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={imagePreview}
                                     alt="Preview"

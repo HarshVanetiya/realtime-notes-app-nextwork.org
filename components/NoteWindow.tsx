@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Rnd } from 'react-rnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Square, X, Pencil } from 'lucide-react';
@@ -101,9 +102,11 @@ export default function NoteWindow({
                         {/* Title and App Icon */}
                         <div className="flex min-w-0 flex-1 select-none items-center justify-center gap-2 px-4 text-xs font-semibold text-foreground">
                             {window.note.image_url && (
-                                <img
+                                <Image
                                     src={window.note.image_url}
                                     alt=""
+                                    width={20}
+                                    height={20}
                                     className="h-5 w-5 flex-shrink-0 rounded object-cover shadow-sm ring-1 ring-border"
                                 />
                             )}

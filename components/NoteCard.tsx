@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { extractPlainText } from '@/lib/note-text';
 import { Star, Trash2, ImageIcon, Edit2, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import EditNoteModal from './EditNoteModal';
 import {
     Dialog,
@@ -118,11 +119,12 @@ export default function NoteCard({
             {/* Image */}
             {note.image_url ? (
                 <div className="relative h-36 overflow-hidden bg-muted border-b border-border/40">
-                    <img
+                    <Image
                         src={note.image_url}
                         alt={`Attachment for ${note.title}`}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 </div>
             ) : null}

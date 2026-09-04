@@ -2,9 +2,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Loader2, Pencil } from 'lucide-react';
 import { Suspense } from 'react';
-import NoteRenderer from '@/components/NoteRenderer';
+import NoteHtml from '@/components/NoteHtml';
+import { renderNoteHtml } from '@/lib/note-html';
 import EditNoteModal from '@/components/EditNoteModal';
 
 // 1. The inner component now receives the Promise directly and awaits it inside
@@ -26,6 +28,9 @@ async function NoteContent({
         notFound();
     }
 
+    // Serialized here so this route ships no editor JavaScript.
+    const html = await renderNoteHtml(note.content);
+
     return (
         <>
             {/* Cover Banner and Header Section */}
@@ -40,10 +45,13 @@ async function NoteContent({
                 
                 {note.image_url && (
                     <div className="relative w-full h-[180px] sm:h-[280px] md:h-[350px] overflow-hidden rounded-2xl border border-border/60 bg-muted mb-8">
-                        <img
+                        <Image
                             src={note.image_url}
                             alt={note.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            priority
+                            sizes="(min-width: 896px) 896px, 100vw"
+                            className="object-cover"
                         />
                     </div>
                 )}
@@ -63,7 +71,7 @@ async function NoteContent({
 
             {/* Note Content */}
             <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6">
-                <NoteRenderer content={note.content} />
+                <NoteHtml html={html} />
             </div>
         </>
     );

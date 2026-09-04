@@ -1,15 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/lib/use-media-query';
 import { extractPlainText } from '@/lib/note-text';
 import NoteCard from './NoteCard';
 import { BookOpen, Star, Search, Plus, X, SearchX } from 'lucide-react';
-import NoteWindow from './NoteWindow';
 import CreateNoteModal from './CreateNoteModal';
 
 import { useSearchParams, useRouter } from 'next/navigation';
+
+// Pulls in BlockNote, Mantine, react-rnd and framer-motion. Windows are
+// desktop-only and open on demand, so this chunk should load on demand too —
+// a phone never fetches it at all.
+const NoteWindow = dynamic(() => import('./NoteWindow'), { ssr: false });
 
 export type WindowState = {
     id: string; // usually note.id
@@ -18,6 +24,8 @@ export type WindowState = {
     isMaximized: boolean;
     zIndex: number;
 };
+
+const PAGE_SIZE = 24;
 
 type Note = {
     id: string;
@@ -46,6 +54,10 @@ export default function NotesList({
 
     const [notes, setNotes] = useState<Note[]>(initialNotes);
     const [query, setQuery] = useState('');
+    // Cards are rendered in batches rather than all at once — the whole set
+    // stays in state so search still covers every note.
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
     const supabase = createClient();
 
     const [windows, setWindows] = useState<WindowState[]>([]);
@@ -130,6 +142,30 @@ export default function NotesList({
 
         return result;
     }, [notes, isFavoritesView, trimmedQuery, searchIndex]);
+
+    // A narrowed result set shouldn't inherit a scrolled-down count.
+    useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [trimmedQuery, isFavoritesView]);
+
+    const hasMore = visibleCount < displayedNotes.length;
+
+    useEffect(() => {
+        if (!hasMore) return;
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setVisibleCount((c) => c + PAGE_SIZE);
+                }
+            },
+            { rootMargin: '400px' },
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasMore, displayedNotes.length]);
 
     useEffect(() => {
         const channel = supabase
@@ -252,17 +288,27 @@ export default function NotesList({
         }
 
         return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-32">
-                {displayedNotes.map((note, index) => (
-                    <NoteCard
-                        key={note.id}
-                        note={note}
-                        onDelete={handleDelete}
-                        index={index}
-                        onClick={() => handleOpenNote(note)}
-                    />
-                ))}
-            </div>
+            <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {displayedNotes.slice(0, visibleCount).map((note, index) => (
+                        <NoteCard
+                            key={note.id}
+                            note={note}
+                            onDelete={handleDelete}
+                            index={index}
+                            onClick={() => handleOpenNote(note)}
+                        />
+                    ))}
+                </div>
+                {/* Scrolled into view -> render the next batch. */}
+                <div ref={sentinelRef} aria-hidden className="h-px" />
+                {hasMore && (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                        Loading more notes...
+                    </p>
+                )}
+                <div className="pb-32" />
+            </>
         );
     }
 
@@ -353,12 +399,14 @@ export default function NotesList({
                                     title={w.note.title}
                                     className="group relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/80 shadow-xl backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:scale-110 animate-in zoom-in-50 fade-in"
                                 >
-                                    <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full">
+                                    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full">
                                         {w.note.image_url ? (
-                                            <img
+                                            <Image
                                                 src={w.note.image_url}
                                                 alt={w.note.title}
-                                                className="h-full w-full object-cover"
+                                                fill
+                                                sizes="56px"
+                                                className="object-cover"
                                             />
                                         ) : (
                                             <BookOpen
