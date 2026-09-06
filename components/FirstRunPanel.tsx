@@ -6,6 +6,7 @@ import { Command, Loader2, PenLine, Sparkles, Tag } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 import { SAMPLE_NOTE, dismissOnboarding } from '@/lib/onboarding';
+import { createNote, refreshIfOnline } from '@/lib/notes-api';
 import CreateNoteModal from './CreateNoteModal';
 
 const STEPS = [
@@ -30,7 +31,7 @@ export default function FirstRunPanel({
 
     async function addSample() {
         setSeeding(true);
-        const { error } = await supabase.from('notes').insert({
+        const { error, queued } = await createNote(supabase, {
             user_id: userId,
             title: SAMPLE_NOTE.title,
             content: SAMPLE_NOTE.content,
@@ -41,15 +42,17 @@ export default function FirstRunPanel({
 
         if (error) {
             toast.error('Could not add the sample note', {
-                description: error.message,
+                description: error,
             });
             return;
         }
         dismissOnboarding();
         onDismiss();
-        router.refresh();
+        refreshIfOnline(router);
         toast.success('Sample note added', {
-            description: 'Edit or delete it like any other note.',
+            description: queued
+                ? 'Saved on this device — it will sync when you reconnect.'
+                : 'Edit or delete it like any other note.',
         });
     }
 

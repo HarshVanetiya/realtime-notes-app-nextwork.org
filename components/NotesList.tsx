@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useOnlineStatus } from '@/lib/use-online-status';
 import { extractPlainText } from '@/lib/note-text';
@@ -19,6 +19,16 @@ import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle }
 import CreateNoteModal from './CreateNoteModal';
 import FirstRunPanel from './FirstRunPanel';
 import { dismissOnboarding, hasDismissedOnboarding } from '@/lib/onboarding';
+import {
+    queueServerSnapshot,
+    queueSnapshot,
+    subscribeQueue,
+} from '@/lib/offline-queue';
+import {
+    flushQueue,
+    mergePendingCreates,
+    refreshIfOnline,
+} from '@/lib/notes-api';
 
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -65,6 +75,15 @@ export default function NotesList({
         setNotes(initialNotes);
     }, [initialNotes]);
 
+    // Writes made while the connection was gone. Subscribed rather than
+    // polled so the badge and the banner count update the moment one is
+    // queued or flushed.
+    const queuedOps = useSyncExternalStore(
+        subscribeQueue,
+        queueSnapshot,
+        queueServerSnapshot,
+    );
+
     // Onboarding is decided on the client, because the flag lives in
     // localStorage and doesn't exist during the server render. Seeding this
     // from storage in useState would hydration-mismatch, so it starts false and
@@ -91,11 +110,24 @@ export default function NotesList({
 
 
 
+    // A note written offline is a real note as far as this list is concerned:
+    // searchable, taggable, and sorted in place. It carries the id it will
+    // keep on the server, so when the row finally arrives the placeholder is
+    // the same note rather than a duplicate.
+    const notesWithPending = useMemo(
+        () => mergePendingCreates(notes, queuedOps),
+        [notes, queuedOps],
+    );
+    const pendingIds = useMemo(
+        () => new Set(queuedOps.map((op) => op.id)),
+        [queuedOps],
+    );
+
     // Title + body text per note, so typing in the search box doesn't reparse
     // every note document on every keystroke.
     const searchIndex = useMemo(() => {
         const index = new Map<string, string>();
-        notes.forEach((note) => {
+        notesWithPending.forEach((note) => {
             index.set(
                 note.id,
                 `${note.title} ${(note.tags ?? []).join(' ')} ${extractPlainText(
@@ -104,14 +136,14 @@ export default function NotesList({
             );
         });
         return index;
-    }, [notes]);
+    }, [notesWithPending]);
 
     const trimmedQuery = query.trim().toLowerCase();
 
     const displayedNotes = useMemo(() => {
         let result = isFavoritesView
-            ? notes.filter((note) => note.is_favorite)
-            : notes;
+            ? notesWithPending.filter((note) => note.is_favorite)
+            : notesWithPending;
 
         if (activeTag) {
             result = result.filter((note) =>
@@ -126,9 +158,19 @@ export default function NotesList({
         }
 
         return sortNotes(result, sort);
-    }, [notes, isFavoritesView, activeTag, trimmedQuery, searchIndex, sort]);
+    }, [
+        notesWithPending,
+        isFavoritesView,
+        activeTag,
+        trimmedQuery,
+        searchIndex,
+        sort,
+    ]);
 
-    const availableTags = useMemo(() => collectTags(notes), [notes]);
+    const availableTags = useMemo(
+        () => collectTags(notesWithPending),
+        [notesWithPending],
+    );
 
     // A narrowed result set shouldn't inherit a scrolled-down count.
     useEffect(() => {
@@ -235,6 +277,42 @@ export default function NotesList({
         return () => clearTimeout(timer);
     }, [degraded, isOnline]);
 
+    // Replay queued writes whenever a path back to the server appears. Both
+    // triggers commonly fire within the same second, which is why flushQueue
+    // serialises internally rather than relying on this effect not to race.
+    useEffect(() => {
+        // Gated on the browser being online, not on realtime being live:
+        // realtime can be blocked by a corporate proxy or simply slow to
+        // rejoin, and queued writes must not be held hostage to it. The
+        // channelState dependency is still here so a rejoin re-triggers a
+        // flush; flushQueue serialises, so the overlap is free.
+        if (!isOnline) return;
+        let cancelled = false;
+        (async () => {
+            const report = await flushQueue(supabase);
+            if (cancelled || (report.synced === 0 && report.dropped.length === 0))
+                return;
+            if (report.synced > 0) {
+                router.refresh();
+                toast.success(
+                    report.synced === 1
+                        ? 'Synced 1 offline change'
+                        : `Synced ${report.synced} offline changes`,
+                );
+            }
+            for (const drop of report.dropped) {
+                // Silently discarding these is how an offline edit disappears
+                // without anyone noticing it was ever made.
+                toast.error('An offline change could not be applied', {
+                    description: drop.reason,
+                });
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [isOnline, channelState, supabase, router, toast]);
+
     // Coming back is the moment the list has to be refetched — and the one
     // moment worth a toast, because it is an event rather than a state.
     useEffect(() => {
@@ -290,7 +368,7 @@ export default function NotesList({
         'w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-foreground/5 border border-border/50 shadow-sm flex items-center justify-center mb-6';
 
     function renderContent() {
-        if (loadError && notes.length === 0) {
+        if (loadError && notesWithPending.length === 0) {
             return (
                 <div className={emptyStateWrapper}>
                     <div className={emptyStateIcon}>
@@ -303,7 +381,7 @@ export default function NotesList({
                         {loadError}
                     </p>
                     <button
-                        onClick={() => router.refresh()}
+                        onClick={() => refreshIfOnline(router)}
                         className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
                     >
                         Try again
@@ -312,7 +390,7 @@ export default function NotesList({
             );
         }
 
-        if (notes.length === 0 && showFirstRun) {
+        if (notesWithPending.length === 0 && showFirstRun) {
             return (
                 <FirstRunPanel
                     userId={userId}
@@ -321,7 +399,7 @@ export default function NotesList({
             );
         }
 
-        if (notes.length === 0) {
+        if (notesWithPending.length === 0) {
             return (
                 <div className={emptyStateWrapper}>
                     <div className={emptyStateIcon}>
@@ -441,6 +519,7 @@ export default function NotesList({
                             onDelete={handleDelete}
                             onRestore={handleRestore}
                             index={index}
+                            pending={pendingIds.has(note.id)}
                         />
                     ))}
                 </div>
@@ -466,17 +545,22 @@ export default function NotesList({
                 {activeTag ? ` tagged ${activeTag}` : ''}
             </h1>
 
-            {showBanner && (
+            {(showBanner || queuedOps.length > 0) && (
                 <SyncStatusBanner
                     state={isOnline ? 'interrupted' : 'offline'}
                     onRetry={retrySync}
                     isRetrying={isRetrying}
+                    pendingCount={queuedOps.length}
+                    /* Queued writes are worth surfacing even once the
+                       connection is healthy again — the flush takes a moment,
+                       and until it finishes those notes exist only here. */
+                    healthy={!showBanner}
                 />
             )}
 
             {/* Notes grid */}
             <div className="animate-fade-in">
-                {notes.length > 0 && (
+                {notesWithPending.length > 0 && (
                     <NoteToolbar
                         tags={availableTags}
                         activeTag={activeTag}

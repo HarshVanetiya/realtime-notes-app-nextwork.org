@@ -38,6 +38,15 @@ export default function ShareNoteDialog({
         : '';
 
     async function setShared(next: boolean) {
+        // Not queued: the slug is minted by a database trigger, so there is no
+        // link to show until the server has answered. Promising a URL that
+        // does not exist yet would be worse than saying no.
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            toast.error('You\u2019re offline', {
+                description: 'Sharing needs a connection to create the link.',
+            });
+            return;
+        }
         setBusy(true);
         // The slug is minted and cleared by a database trigger, so the client
         // only ever flips the boolean — it cannot choose or keep a URL.

@@ -3,13 +3,14 @@
 import { createClient } from '@/lib/supabase/client';
 import { extractPlainText } from '@/lib/note-text';
 import type { Note } from '@/lib/note-types';
-import { Star, Trash2, ImageIcon, Edit2 } from 'lucide-react';
+import { Star, Trash2, ImageIcon, Edit2, CloudUpload } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import EditNoteModal from './EditNoteModal';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/toast-provider';
+import { updateNote } from '@/lib/notes-api';
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -41,12 +42,15 @@ export default function NoteCard({
     onDelete,
     onRestore,
     index = 0,
+    pending = false,
 }: {
     note: Note;
     onDelete: (id: string) => void;
     /** Puts the note back after an undo, or after a failed delete. */
     onRestore?: (note: Note) => void;
     index?: number;
+    /** Written offline and not yet on the server. */
+    pending?: boolean;
 }) {
     const supabase = createClient();
     const toast = useToast();
@@ -59,19 +63,18 @@ export default function NoteCard({
     );
 
     async function restore() {
-        const { error } = await supabase
-            .from('notes')
-            .update({ deleted_at: null })
-            .eq('id', note.id);
+        const { error, queued } = await updateNote(supabase, note.id, {
+            deleted_at: null,
+        });
 
         if (error) {
-            toast.error('Could not restore note', {
-                description: error.message,
-            });
+            toast.error('Could not restore note', { description: error });
             return;
         }
         onRestore?.(note);
-        toast.success('Note restored');
+        toast.success(queued ? 'Restored offline' : 'Note restored', {
+            description: queued ? 'Will sync when you reconnect.' : undefined,
+        });
     }
 
     async function handleDelete() {
@@ -80,10 +83,9 @@ export default function NoteCard({
         setIsDeleting(true);
         onDelete(note.id);
 
-        const { error } = await supabase
-            .from('notes')
-            .update({ deleted_at: new Date().toISOString() })
-            .eq('id', note.id);
+        const { error, queued } = await updateNote(supabase, note.id, {
+            deleted_at: new Date().toISOString(),
+        });
 
         setIsDeleting(false);
 
@@ -91,26 +93,25 @@ export default function NoteCard({
             // Put it back rather than leaving the UI claiming a delete that
             // never happened.
             onRestore?.(note);
-            toast.error('Could not delete note', {
-                description: error.message,
-            });
+            toast.error('Could not delete note', { description: error });
             return;
         }
 
         // Undo is a one-column update, so it cannot fail the way re-inserting a
-        // destroyed row could.
-        toast.success('Note moved to trash', {
-            description: note.title,
+        // destroyed row could — and offline it is queued the same way.
+        toast.success(queued ? 'Moved to trash offline' : 'Note moved to trash', {
+            description: queued
+                ? `\u201c${note.title}\u201d will sync when you reconnect.`
+                : note.title,
             action: { label: 'Undo', onClick: () => void restore() },
         });
     }
 
     async function toggleFavorite() {
         setIsTogglingFav(true);
-        const { error } = await supabase
-            .from('notes')
-            .update({ is_favorite: !note.is_favorite })
-            .eq('id', note.id);
+        const { error } = await updateNote(supabase, note.id, {
+            is_favorite: !note.is_favorite,
+        });
         if (error) {
             // The star is driven by realtime, so on failure it silently stays
             // put — without this the user has no idea the tap did nothing.
@@ -118,7 +119,7 @@ export default function NoteCard({
                 note.is_favorite
                     ? 'Could not remove from favorites'
                     : 'Could not add to favorites',
-                { description: error.message },
+                { description: error },
             );
         }
         setIsTogglingFav(false);
@@ -284,11 +285,22 @@ export default function NoteCard({
                 >
                     {timeAgo(note.created_at)}
                 </span>
-                {note.is_favorite && (
-                    <span className="text-xs font-medium text-amber-500/80 bg-amber-400/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                        Favorite
-                    </span>
-                )}
+                <span className="flex flex-shrink-0 items-center gap-2">
+                    {pending && (
+                        <span
+                            title="Saved on this device — not yet synced"
+                            className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-text"
+                        >
+                            <CloudUpload size={11} />
+                            Pending sync
+                        </span>
+                    )}
+                    {note.is_favorite && (
+                        <span className="text-xs font-medium text-amber-500/80 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                            Favorite
+                        </span>
+                    )}
+                </span>
             </div>
 
         </div>

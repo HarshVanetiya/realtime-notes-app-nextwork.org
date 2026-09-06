@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 import { extractPlainText } from '@/lib/note-text';
 import type { Note } from '@/lib/note-types';
+import { refreshIfOnline, updateNote } from '@/lib/notes-api';
 
 function trashedAgo(dateStr: string | null | undefined) {
     if (!dateStr) return '';
@@ -25,23 +26,38 @@ export default function TrashList({ initialNotes }: { initialNotes: Note[] }) {
 
     async function restore(note: Note) {
         setBusy(note.id);
-        const { error } = await supabase
-            .from('notes')
-            .update({ deleted_at: null })
-            .eq('id', note.id);
+        const { error, queued } = await updateNote(supabase, note.id, {
+            deleted_at: null,
+        });
         setBusy(null);
         if (error) {
-            toast.error('Could not restore note', { description: error.message });
+            toast.error('Could not restore note', { description: error });
             return;
         }
         setNotes((c) => c.filter((n) => n.id !== note.id));
-        toast.success('Note restored', { description: note.title });
-        router.refresh();
+        toast.success(queued ? 'Restored offline' : 'Note restored', {
+            description: queued
+                ? `\u201c${note.title}\u201d will sync when you reconnect.`
+                : note.title,
+        });
+        refreshIfOnline(router);
     }
 
     // The only genuinely destructive action left in the app, so it keeps a
     // confirmation — there is nowhere to undo from after this.
+    //
+    // Deliberately not queued. Replaying an irreversible delete an hour later,
+    // against a row that may have been restored on another device in the
+    // meantime, is the one case where "we'll do it when you reconnect" is worse
+    // than refusing.
     async function purge(note: Note) {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            toast.error('You\u2019re offline', {
+                description:
+                    'Deleting a note for good needs a connection. It stays in Trash until then.',
+            });
+            return;
+        }
         setBusy(note.id);
         const { error } = await supabase.from('notes').delete().eq('id', note.id);
         setBusy(null);
