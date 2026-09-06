@@ -28,6 +28,15 @@ function getEditor() {
  * discards anything the schema doesn't recognise (script tags included) rather
  * than passing stored markup straight through.
  */
+/**
+ * Code blocks scroll horizontally. Inside the editor that is fine — the caret
+ * scrolls them — but this output is static, so without a tab stop a keyboard
+ * user cannot reach the overflowing part at all.
+ */
+function makeCodeBlocksFocusable(html: string): string {
+    return html.replace(/<pre(?![^>]*tabindex)/g, '<pre tabindex="0"');
+}
+
 export async function renderNoteHtml(
     content: string | null | undefined,
 ): Promise<string> {
@@ -38,10 +47,10 @@ export async function renderNoteHtml(
     try {
         const blocks = JSON.parse(content);
         if (!Array.isArray(blocks) || blocks.length === 0) return '';
-        return await bn.blocksToFullHTML(blocks);
+        return makeCodeBlocksFocusable(await bn.blocksToFullHTML(blocks));
     } catch {
         const blocks = await bn.tryParseHTMLToBlocks(content);
         if (blocks.length === 0) return '';
-        return await bn.blocksToFullHTML(blocks);
+        return makeCodeBlocksFocusable(await bn.blocksToFullHTML(blocks));
     }
 }

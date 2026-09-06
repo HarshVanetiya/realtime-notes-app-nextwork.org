@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/lib/use-media-query';
+import { useOnlineStatus } from '@/lib/use-online-status';
 import { extractPlainText } from '@/lib/note-text';
 import {
     collectTags,
@@ -13,6 +14,8 @@ import {
     type SortValue,
 } from '@/lib/note-tags';
 import NoteToolbar from './NoteToolbar';
+import SyncStatusBanner from './SyncStatusBanner';
+import { useToast } from '@/components/toast-provider';
 import NoteCard from './NoteCard';
 import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle } from 'lucide-react';
 import CreateNoteModal from './CreateNoteModal';
@@ -68,8 +71,29 @@ export default function NotesList({
     // wider than a phone. Below `lg` we open the note's own page instead.
     const isDesktop = useMediaQuery('(min-width: 1024px)');
 
+    const toast = useToast();
+    const isOnline = useOnlineStatus();
     const [notes, setNotes] = useState<Note[]>(initialNotes);
+
+    // Realtime never replays what was missed while disconnected, so a dropped
+    // subscription leaves this list quietly wrong until it is refetched.
+    const [channelState, setChannelState] = useState<
+        'connecting' | 'live' | 'interrupted'
+    >('connecting');
+    const [retryNonce, setRetryNonce] = useState(0);
+    const [showBanner, setShowBanner] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
+    const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const everLive = useRef(false);
+    const droppedSinceLive = useRef(false);
     const [query, setQuery] = useState('');
+    // initialNotes is a fresh array on every server render, so this is also what
+    // lets router.refresh() heal the list after a drop. Without it the useState
+    // seed above is read once and every later server render is ignored.
+    useEffect(() => {
+        setNotes(initialNotes);
+    }, [initialNotes]);
+
     // Cards are rendered in batches rather than all at once — the whole set
     // stays in state so search still covers every note.
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -229,12 +253,80 @@ export default function NotesList({
                     }
                 },
             )
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    setChannelState('live');
+                } else if (
+                    status === 'CHANNEL_ERROR' ||
+                    status === 'TIMED_OUT' ||
+                    status === 'CLOSED'
+                ) {
+                    setChannelState('interrupted');
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, userId]);
+    }, [supabase, userId, retryNonce]);
+
+    // Anything that isn't live counts as degraded, including 'connecting'.
+    // Treating connecting as healthy made the banner unmount the instant Retry
+    // was pressed and reappear seconds later.
+    const degraded = !isOnline || channelState !== 'live';
+
+    // A rejoin often succeeds within a second or two; only a sustained failure
+    // is worth putting on screen. Losing the network is definitive, so that
+    // shows at once.
+    useEffect(() => {
+        if (!degraded) {
+            setShowBanner(false);
+            return;
+        }
+        if (!isOnline) {
+            setShowBanner(true);
+            return;
+        }
+        const timer = setTimeout(() => setShowBanner(true), 4000);
+        return () => clearTimeout(timer);
+    }, [degraded, isOnline]);
+
+    // Coming back is the moment the list has to be refetched — and the one
+    // moment worth a toast, because it is an event rather than a state.
+    useEffect(() => {
+        if (channelState === 'interrupted' && everLive.current) {
+            droppedSinceLive.current = true;
+        }
+        if (channelState !== 'live') return;
+
+        if (droppedSinceLive.current) {
+            droppedSinceLive.current = false;
+            router.refresh();
+            toast.success('Reconnected', {
+                description: 'Notes refreshed from the server.',
+            });
+        }
+        everLive.current = true;
+    }, [channelState, router, toast]);
+
+    function retrySync() {
+        // A failing channel can error again within milliseconds, so without a
+        // floor the spinner never paints and the click looks ignored.
+        setIsRetrying(true);
+        if (retryTimer.current) clearTimeout(retryTimer.current);
+        retryTimer.current = setTimeout(() => setIsRetrying(false), 1200);
+
+        setChannelState('connecting');
+        setRetryNonce((n) => n + 1);
+        router.refresh();
+    }
+
+    useEffect(
+        () => () => {
+            if (retryTimer.current) clearTimeout(retryTimer.current);
+        },
+        [],
+    );
 
     function handleDelete(id: string) {
         setNotes((current) => current.filter((note) => note.id !== id));
@@ -396,6 +488,14 @@ export default function NotesList({
                 {isFavoritesView ? 'Favorite notes' : 'My notes'}
                 {activeTag ? ` tagged ${activeTag}` : ''}
             </h1>
+
+            {showBanner && (
+                <SyncStatusBanner
+                    state={isOnline ? 'interrupted' : 'offline'}
+                    onRetry={retrySync}
+                    isRetrying={isRetrying}
+                />
+            )}
 
             {/* Notes grid */}
             <div className="animate-fade-in">
