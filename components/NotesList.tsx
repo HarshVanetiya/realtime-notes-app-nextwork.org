@@ -3,20 +3,23 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useOnlineStatus } from '@/lib/use-online-status';
-import { extractPlainText } from '@/lib/note-text';
 import type { Note } from '@/lib/note-types';
+import { isSortValue, type SortValue } from '@/lib/note-tags';
 import {
-    collectTags,
-    isSortValue,
-    sortNotes,
-    type SortValue,
-} from '@/lib/note-tags';
+    PAGE_SIZE,
+    fetchNotesCount,
+    fetchNotesPage,
+    fetchTagCounts,
+    type NotesQuery,
+    type TagCount,
+} from '@/lib/notes-query';
 import NoteToolbar from './NoteToolbar';
 import SyncStatusBanner from './SyncStatusBanner';
 import { useToast } from '@/components/toast-provider';
 import NoteCard from './NoteCard';
 import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle } from 'lucide-react';
 import CreateNoteModal from './CreateNoteModal';
+import NotesGridSkeleton from './NotesGridSkeleton';
 import FirstRunPanel from './FirstRunPanel';
 import { dismissOnboarding, hasDismissedOnboarding } from '@/lib/onboarding';
 import {
@@ -32,14 +35,18 @@ import {
 
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const PAGE_SIZE = 24;
-
 export default function NotesList({
     initialNotes,
+    initialTotal,
+    initialTags,
     userId,
     loadError = null,
 }: {
+    /** The first page, already filtered and sorted by the database. */
     initialNotes: Note[];
+    /** How many notes match the current filters in total, not just here. */
+    initialTotal: number;
+    initialTags: TagCount[];
     userId: string;
     /** Set when the server query failed — without it an empty list is
      *  indistinguishable from "you have no notes", which is a lie. */
@@ -56,6 +63,10 @@ export default function NotesList({
     const isOnline = useOnlineStatus();
     const [notes, setNotes] = useState<Note[]>(initialNotes);
 
+    // Which criteria the rows currently in `notes` answer. Compared against
+    // the live criteria below so the client only refetches on a real change.
+    const servedCriteria = useRef<string>('');
+
     // Realtime never replays what was missed while disconnected, so a dropped
     // subscription leaves this list quietly wrong until it is refetched.
     const [channelState, setChannelState] = useState<
@@ -71,9 +82,31 @@ export default function NotesList({
     // initialNotes is a fresh array on every server render, so this is also what
     // lets router.refresh() heal the list after a drop. Without it the useState
     // seed above is read once and every later server render is ignored.
+    //
+    // A server render answers the URL's tag/sort/favourites with no search
+    // term, so the paged state resets with it — and servedCriteria below is
+    // marked as already answered, otherwise navigating to a tag would fetch
+    // page one twice: once on the server, once again on the client.
     useEffect(() => {
         setNotes(initialNotes);
-    }, [initialNotes]);
+        setTotal(initialTotal);
+        setTagCounts(initialTags);
+        setPage(0);
+        setQuery('');
+        servedCriteria.current = JSON.stringify({
+            query: '',
+            tag: searchParams.get('tag'),
+            favorites: searchParams.get('filter') === 'favorites',
+            sort: isSortValue(searchParams.get('sort'))
+                ? searchParams.get('sort')
+                : 'newest',
+        });
+    }, [initialNotes, initialTotal, initialTags, searchParams]);
+
+    // "Is the user looking at a subset?" — the difference between "you have no
+    // notes" and "nothing matched", which are very different things to say.
+    const isFiltered =
+        query.trim() !== '' || !!activeTag || isFavoritesView;
 
     // Writes made while the connection was gone. Subscribed rather than
     // polled so the badge and the banner count update the moment one is
@@ -91,6 +124,13 @@ export default function NotesList({
     // honest thing to show before we know.
     const [showFirstRun, setShowFirstRun] = useState(false);
     useEffect(() => {
+        // Only when the list is genuinely empty. A search that matched nothing
+        // is not a first run, and offering to seed a sample note there would
+        // be nonsense.
+        if (isFiltered) {
+            setShowFirstRun(false);
+            return;
+        }
         if (notes.length > 0) {
             // They already have notes, so onboarding is moot — record that,
             // otherwise emptying the list later would introduce a first run to
@@ -100,20 +140,40 @@ export default function NotesList({
             return;
         }
         setShowFirstRun(!hasDismissedOnboarding());
-    }, [notes.length]);
+    }, [notes.length, isFiltered]);
 
-    // Cards are rendered in batches rather than all at once — the whole set
-    // stays in state so search still covers every note.
-    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const supabase = createClient();
 
+    // Paging and result totals now come from the database (0008): the page is
+    // one indexed query, the count is a separate one, and search runs against
+    // a tsvector rather than against whatever happened to be downloaded.
+    const [total, setTotal] = useState(initialTotal);
+    const [page, setPage] = useState(0);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [queryError, setQueryError] = useState<string | null>(null);
+    const [tagCounts, setTagCounts] = useState<TagCount[]>(initialTags);
+    // Bumped by realtime, so a note tagged in another tab updates the chips
+    // here. Local edits go through router.refresh(), which brings a fresh
+    // census with the server render.
+    const [tagsNonce, setTagsNonce] = useState(0);
 
+    const trimmedQuery = query.trim();
 
-    // A note written offline is a real note as far as this list is concerned:
-    // searchable, taggable, and sorted in place. It carries the id it will
-    // keep on the server, so when the row finally arrives the placeholder is
-    // the same note rather than a duplicate.
+    const criteria: NotesQuery = useMemo(
+        () => ({
+            query: trimmedQuery,
+            tag: activeTag,
+            favorites: isFavoritesView,
+            sort,
+        }),
+        [trimmedQuery, activeTag, isFavoritesView, sort],
+    );
+
+    // Everything the server already knows about is server state; the only
+    // client-side additions are notes written offline, which by definition it
+    // has never seen.
     const notesWithPending = useMemo(
         () => mergePendingCreates(notes, queuedOps),
         [notes, queuedOps],
@@ -122,79 +182,115 @@ export default function NotesList({
         () => new Set(queuedOps.map((op) => op.id)),
         [queuedOps],
     );
+    const displayedNotes = notesWithPending;
 
-    // Title + body text per note, so typing in the search box doesn't reparse
-    // every note document on every keystroke.
-    const searchIndex = useMemo(() => {
-        const index = new Map<string, string>();
-        notesWithPending.forEach((note) => {
-            index.set(
-                note.id,
-                `${note.title} ${(note.tags ?? []).join(' ')} ${extractPlainText(
-                    note.content,
-                )}`.toLowerCase(),
-            );
-        });
-        return index;
-    }, [notesWithPending]);
-
-    const trimmedQuery = query.trim().toLowerCase();
-
-    const displayedNotes = useMemo(() => {
-        let result = isFavoritesView
-            ? notesWithPending.filter((note) => note.is_favorite)
-            : notesWithPending;
-
-        if (activeTag) {
-            result = result.filter((note) =>
-                (note.tags ?? []).includes(activeTag),
-            );
-        }
-
-        if (trimmedQuery) {
-            result = result.filter((note) =>
-                (searchIndex.get(note.id) ?? '').includes(trimmedQuery),
-            );
-        }
-
-        return sortNotes(result, sort);
-    }, [
-        notesWithPending,
-        isFavoritesView,
-        activeTag,
-        trimmedQuery,
-        searchIndex,
-        sort,
-    ]);
-
-    const availableTags = useMemo(
-        () => collectTags(notesWithPending),
-        [notesWithPending],
-    );
-
-    // A narrowed result set shouldn't inherit a scrolled-down count.
-    useEffect(() => {
-        setVisibleCount(PAGE_SIZE);
-    }, [trimmedQuery, isFavoritesView, activeTag, sort]);
-
-    const hasMore = visibleCount < displayedNotes.length;
+    const availableTags = tagCounts;
 
     useEffect(() => {
-        if (!hasMore) return;
+        const key = JSON.stringify(criteria);
+        if (servedCriteria.current === key) return;
+
+        // Typing should not fire a request per keystroke, but changing a tag
+        // or a sort order should feel immediate.
+        const isTyping = criteria.query !== '';
+        const controller = new AbortController();
+        const timer = setTimeout(
+            () => {
+                servedCriteria.current = key;
+                setIsSearching(true);
+                setQueryError(null);
+                Promise.all([
+                    fetchNotesPage(supabase, criteria, 0, controller.signal),
+                    fetchNotesCount(supabase, criteria, controller.signal),
+                ])
+                    .then(([rows, count]) => {
+                        setNotes(rows);
+                        setTotal(count);
+                        setPage(0);
+                    })
+                    .catch((e) => {
+                        if (controller.signal.aborted) return;
+                        // Silence here would show the previous results as
+                        // though they answered the new query.
+                        setQueryError(
+                            (e as { message?: string })?.message ??
+                                'Search failed.',
+                        );
+                    })
+                    .finally(() => {
+                        if (!controller.signal.aborted) setIsSearching(false);
+                    });
+            },
+            isTyping ? 250 : 0,
+        );
+
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [criteria, supabase]);
+
+    // The tag census is a full scan (54 ms on 50,000 notes), so it is
+    // debounced and only re-run when realtime says something changed — never
+    // per keystroke and never per page.
+    useEffect(() => {
+        if (tagsNonce === 0) return;
+        const timer = setTimeout(() => {
+            fetchTagCounts(supabase)
+                .then(setTagCounts)
+                // A stale chip list is a cosmetic problem; it is not worth an
+                // error message, and the next server render will fix it.
+                .catch(() => {});
+        }, 1500);
+        return () => clearTimeout(timer);
+    }, [tagsNonce, supabase]);
+
+    // Read by the realtime handler. A ref rather than a dependency, so the
+    // channel is not torn down and resubscribed on every keystroke.
+    const filtersRef = useRef(criteria);
+    filtersRef.current = criteria;
+
+    const hasMore = notes.length < total;
+
+    // Scrolled into view -> fetch the next page from the server rather than
+    // reveal more of an array that already held everything.
+    useEffect(() => {
+        if (!hasMore || isLoadingMore || isSearching) return;
         const sentinel = sentinelRef.current;
         if (!sentinel) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
-                if (entries[0]?.isIntersecting) {
-                    setVisibleCount((c) => c + PAGE_SIZE);
-                }
+                if (!entries[0]?.isIntersecting) return;
+                setIsLoadingMore(true);
+                const next = page + 1;
+                fetchNotesPage(supabase, criteria, next)
+                    .then((rows) => {
+                        // Merge by id. A note inserted at the top between two
+                        // page requests shifts every later row down by one,
+                        // which without this shows the boundary note twice.
+                        setNotes((current) => {
+                            const seen = new Set(current.map((n) => n.id));
+                            return [
+                                ...current,
+                                ...rows.filter((r) => !seen.has(r.id)),
+                            ];
+                        });
+                        setPage(next);
+                    })
+                    .catch((e) => {
+                        setQueryError(
+                            (e as { message?: string })?.message ??
+                                'Could not load more notes.',
+                        );
+                    })
+                    .finally(() => setIsLoadingMore(false));
             },
             { rootMargin: '400px' },
         );
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [hasMore, displayedNotes.length]);
+    }, [hasMore, isLoadingMore, isSearching, page, criteria, supabase]);
 
     useEffect(() => {
         const channel = supabase
@@ -208,28 +304,59 @@ export default function NotesList({
                     filter: `user_id=eq.${userId}`,
                 },
                 (payload) => {
+                    setTagsNonce((n) => n + 1);
+
+                    // Now that the server decides what belongs in the list, a
+                    // realtime row has to be checked against the same filters
+                    // before being spliced in — otherwise searching for "tax"
+                    // and creating a note called "lunch" makes it appear in
+                    // the results.
+                    const belongs = (note: Note) =>
+                        !note.deleted_at &&
+                        (!filtersRef.current.tag ||
+                            (note.tags ?? []).includes(filtersRef.current.tag)) &&
+                        (!filtersRef.current.favorites || note.is_favorite) &&
+                        // A search term can only be evaluated by the database,
+                        // so while one is active new rows are left to the next
+                        // fetch rather than guessed at.
+                        !filtersRef.current.query;
+
                     if (payload.eventType === 'INSERT') {
-                        setNotes((current) => [
-                            payload.new as Note,
-                            ...current,
-                        ]);
-                    } else if (payload.eventType === 'DELETE') {
+                        const added = payload.new as Note;
+                        if (!belongs(added)) return;
                         setNotes((current) =>
-                            current.filter(
-                                (note) => note.id !== payload.old.id,
-                            ),
+                            current.some((n) => n.id === added.id)
+                                ? current
+                                : [added, ...current],
                         );
+                        setTotal((t) => t + 1);
+                    } else if (payload.eventType === 'DELETE') {
+                        setNotes((current) => {
+                            if (!current.some((n) => n.id === payload.old.id))
+                                return current;
+                            setTotal((t) => Math.max(0, t - 1));
+                            return current.filter(
+                                (note) => note.id !== payload.old.id,
+                            );
+                        });
                     } else if (payload.eventType === 'UPDATE') {
                         const updated = payload.new as Note;
                         setNotes((current) => {
+                            const present = current.some(
+                                (note) => note.id === updated.id,
+                            );
                             // Soft delete arrives here, not as a DELETE event.
-                            if (updated.deleted_at) {
+                            // So does a note edited out of the current filter.
+                            if (!belongs(updated)) {
+                                if (!present) return current;
+                                setTotal((t) => Math.max(0, t - 1));
                                 return current.filter(
                                     (note) => note.id !== updated.id,
                                 );
                             }
-                            // Restored elsewhere: it is not in this list yet.
-                            if (!current.some((note) => note.id === updated.id)) {
+                            // Restored, or edited into the filter, elsewhere.
+                            if (!present) {
+                                setTotal((t) => t + 1);
                                 return [updated, ...current];
                             }
                             return current.map((note) =>
@@ -351,15 +478,19 @@ export default function NotesList({
     );
 
     function handleDelete(id: string) {
-        setNotes((current) => current.filter((note) => note.id !== id));
+        setNotes((current) => {
+            if (!current.some((n) => n.id === id)) return current;
+            setTotal((t) => Math.max(0, t - 1));
+            return current.filter((note) => note.id !== id);
+        });
     }
 
     function handleRestore(note: Note) {
-        setNotes((current) =>
-            current.some((n) => n.id === note.id)
-                ? current
-                : [note, ...current],
-        );
+        setNotes((current) => {
+            if (current.some((n) => n.id === note.id)) return current;
+            setTotal((t) => t + 1);
+            return [note, ...current];
+        });
     }
 
     const emptyStateWrapper =
@@ -390,7 +521,33 @@ export default function NotesList({
             );
         }
 
-        if (notesWithPending.length === 0 && showFirstRun) {
+        if (queryError) {
+            return (
+                <div className={emptyStateWrapper}>
+                    <div className={emptyStateIcon}>
+                        <AlertCircle size={36} className="text-destructive" />
+                    </div>
+                    <h2 className="mb-2 text-lg font-semibold text-foreground">
+                        Search failed
+                    </h2>
+                    <p className="mb-6 max-w-sm break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                        {queryError}
+                    </p>
+                    <button
+                        onClick={() => refreshIfOnline(router)}
+                        className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+                    >
+                        Try again
+                    </button>
+                </div>
+            );
+        }
+
+        if (isSearching && displayedNotes.length === 0) {
+            return <NotesGridSkeleton />;
+        }
+
+        if (notesWithPending.length === 0 && !isFiltered && showFirstRun) {
             return (
                 <FirstRunPanel
                     userId={userId}
@@ -399,7 +556,7 @@ export default function NotesList({
             );
         }
 
-        if (notesWithPending.length === 0) {
+        if (notesWithPending.length === 0 && !isFiltered) {
             return (
                 <div className={emptyStateWrapper}>
                     <div className={emptyStateIcon}>
@@ -512,7 +669,7 @@ export default function NotesList({
         return (
             <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {displayedNotes.slice(0, visibleCount).map((note, index) => (
+                    {displayedNotes.map((note, index) => (
                         <NoteCard
                             key={note.id}
                             note={note}
@@ -523,11 +680,16 @@ export default function NotesList({
                         />
                     ))}
                 </div>
-                {/* Scrolled into view -> render the next batch. */}
+                {/* Scrolled into view -> fetch the next page. */}
                 <div ref={sentinelRef} aria-hidden className="h-px" />
                 {hasMore && (
                     <p className="py-6 text-center text-sm text-muted-foreground">
                         Loading more notes...
+                    </p>
+                )}
+                {!hasMore && total > PAGE_SIZE && (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                        That&apos;s all {total} notes.
                     </p>
                 )}
                 <div className="pb-32" />
@@ -549,10 +711,17 @@ export default function NotesList({
                 announcement at all — to a screen reader the page simply went
                 quiet. Polite, so it waits for a pause in typing. */}
             <p aria-live="polite" className="sr-only">
-                {trimmedQuery || activeTag || isFavoritesView
-                    ? `${displayedNotes.length} ${
-                          displayedNotes.length === 1 ? 'note' : 'notes'
-                      } shown${trimmedQuery ? ` for \u201c${query.trim()}\u201d` : ''}${
+                {/* A failed query must not be announced as a result count —
+                    the old total is still in state and would be read out as
+                    though it answered the new search. */}
+                {queryError
+                    ? `Search failed: ${queryError}`
+                    : isSearching
+                    ? 'Searching...'
+                    : trimmedQuery || activeTag || isFavoritesView
+                    ? `${total} ${
+                          total === 1 ? 'note' : 'notes'
+                      } found${trimmedQuery ? ` for \u201c${query.trim()}\u201d` : ''}${
                           activeTag ? ` tagged ${activeTag}` : ''
                       }${isFavoritesView ? ' in favorites' : ''}`
                     : ''}

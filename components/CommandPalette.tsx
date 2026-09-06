@@ -18,20 +18,25 @@ import {
     Download,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { extractPlainText } from '@/lib/note-text';
+import { fetchNotesPage } from '@/lib/notes-query';
 import { collectTags, SORT_OPTIONS } from '@/lib/note-tags';
 import CreateNoteModal from './CreateNoteModal';
 import ShortcutsDialog from './ShortcutsDialog';
 
+// Only what the list renders. The body used to be fetched so cmdk could match
+// against it in the browser; the database matches now, so it stays on the
+// server and every palette open is that much lighter.
 type PaletteNote = {
     id: string;
     title: string;
     tags: string[] | null;
-    content: string | null;
 };
 
 // Long enough for a slow connection, short enough that the palette stays usable.
 const REQUEST_TIMEOUT_MS = 5000;
+// The palette is a jump list, not a results page — more than this and it
+// stops being scannable.
+const MAX_RESULTS = 8;
 
 const ITEM =
     'flex cursor-pointer select-none items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground outline-none data-[selected=true]:bg-primary/10 data-[selected=true]:text-primary-text';
@@ -90,57 +95,81 @@ export default function CommandPalette() {
         };
     }, [open]);
 
-    // Fetched when the palette opens rather than held in a provider, so it is
-    // always current and costs nothing while closed.
+    // Searched server-side, debounced, rather than downloading every note when
+    // the palette opens. That download was fine at fifty notes and was the same
+    // ceiling the dashboard had; now the database does the matching, against
+    // the same tsvector the dashboard uses, so the two agree about what
+    // "matches" means.
     useEffect(() => {
         if (!open) return;
+        const term = query.trim();
         let cancelled = false;
-        setLoading(true);
-        setLoadError(null);
-        (async () => {
-            try {
-                const supabase = createClient();
-                // Bounded: on a dead or very slow connection the request can
-                // hang indefinitely, and an unbounded wait would leave the
-                // palette showing "Loading notes..." forever.
-                const { data, error } = await supabase
-                    .from('notes')
-                    .select('id,title,tags,content')
-                    .is('deleted_at', null)
-                    .order('created_at', { ascending: false })
-                    .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
-                if (cancelled) return;
-                if (error) throw error;
-                setNotes((data as PaletteNote[]) ?? []);
-            } catch (e) {
-                if (cancelled) return;
-                // Without this the palette sat on "Loading notes..." forever
-                // whenever the query failed.
-                // Supabase rejects with a PostgrestError — a plain object, not
-                // an Error — so an `instanceof Error` check alone throws away
-                // the message it does carry.
-                const name =
-                    typeof e === 'object' && e !== null && 'name' in e
-                        ? String((e as { name?: unknown }).name)
-                        : '';
-                const message =
-                    typeof e === 'object' && e !== null && 'message' in e
-                        ? String((e as { message?: unknown }).message)
-                        : '';
-                // Supabase re-wraps the abort, so the timeout shows up in the
-                // message rather than the name.
-                const timedOut = /Timeout|Abort/i.test(`${name} ${message}`);
-                setLoadError(
-                    timedOut ? 'the request timed out' : message || 'unknown error',
-                );
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
+        const controller = new AbortController();
+
+        const timer = setTimeout(
+            async () => {
+                setLoading(true);
+                setLoadError(null);
+                try {
+                    const supabase = createClient();
+                    // Bounded: on a dead or very slow connection the request
+                    // can hang indefinitely, and an unbounded wait would leave
+                    // the palette showing "Loading notes..." forever.
+                    const timeout = setTimeout(
+                        () => controller.abort(),
+                        REQUEST_TIMEOUT_MS,
+                    );
+                    const rows = await fetchNotesPage(
+                        supabase,
+                        { query: term, tag: null, favorites: false, sort: 'newest' },
+                        0,
+                        controller.signal,
+                    );
+                    clearTimeout(timeout);
+                    if (cancelled) return;
+                    setNotes(
+                        rows.slice(0, MAX_RESULTS).map((n) => ({
+                            id: n.id,
+                            title: n.title,
+                            tags: n.tags,
+                        })),
+                    );
+                } catch (e) {
+                    if (cancelled) return;
+                    // Without this the palette sat on "Loading notes..."
+                    // forever whenever the query failed.
+                    // Supabase rejects with a PostgrestError — a plain object,
+                    // not an Error — so an `instanceof Error` check alone
+                    // throws away the message it does carry.
+                    const name =
+                        typeof e === 'object' && e !== null && 'name' in e
+                            ? String((e as { name?: unknown }).name)
+                            : '';
+                    const message =
+                        typeof e === 'object' && e !== null && 'message' in e
+                            ? String((e as { message?: unknown }).message)
+                            : '';
+                    // Supabase re-wraps the abort, so the timeout shows up in
+                    // the message rather than the name.
+                    const timedOut = /Timeout|Abort/i.test(`${name} ${message}`);
+                    setLoadError(
+                        timedOut
+                            ? 'the request timed out'
+                            : message || 'unknown error',
+                    );
+                } finally {
+                    if (!cancelled) setLoading(false);
+                }
+            },
+            term ? 200 : 0,
+        );
+
         return () => {
             cancelled = true;
+            controller.abort();
+            clearTimeout(timer);
         };
-    }, [open]);
+    }, [open, query]);
 
     const run = useCallback((fn: () => void) => {
         setOpen(false);
@@ -199,16 +228,24 @@ export default function CommandPalette() {
                     )}
 
                     <Command.Group
+                        // The database already decided which notes match, so
+                        // cmdk must not filter them again: it matches on the
+                        // item's `value`, which cannot contain the body text a
+                        // server-side match may have been found in. forceMount
+                        // on both the group and its items hands the decision to
+                        // the query that actually ran.
+                        forceMount
                         heading="Notes"
                         className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground"
                     >
                         {notes.map((note) => (
                             <Command.Item
                                 key={note.id}
-                                // Body and tags go into the searchable value, so
-                                // cmdk's filter covers the same ground as the
-                                // dashboard search using the same parser.
-                                value={`${note.title} ${(note.tags ?? []).join(' ')} ${extractPlainText(note.content).slice(0, 400)}`}
+                                forceMount
+                                // Kept distinct per note so cmdk's own
+                                // bookkeeping (selection, arrow keys) still has
+                                // a stable identity to work with.
+                                value={`__note__ ${note.id}`}
                                 onSelect={() => run(() => router.push(`/notes/${note.id}`))}
                                 className={ITEM}
                             >

@@ -29,6 +29,7 @@ against a populated database is safe and changes nothing.
 | `0005_tags_and_updated_at.sql` | `tags` + `updated_at`, their indexes, and the trigger that maintains `updated_at` |
 | `0006_soft_delete.sql` | `deleted_at` and its partial indexes — what makes delete undoable and Trash possible |
 | `0007_public_sharing.sql` | `is_public`, `public_slug`, the slug trigger, and the `get_public_note()` function behind `/n/[slug]` |
+| `0008_full_text_search.sql` | `search_vector` + GIN, the sort/paging indexes, and `search_notes()` / `count_notes()` / `note_tags()` |
 | `0009_constraints.sql` | Title length and tag limits, enforced by the database rather than only by the form |
 
 `verify.sql` is read-only and checks all of the above landed — 20 checks.
@@ -43,7 +44,9 @@ dependency order. If you already applied the old pair successfully (in the
 other order), nothing changes: the files are idempotent and re-running them in
 the new order is a no-op.
 
-There is no `0008` yet — it is reserved for full-text search.
+`0008` is what lets the dashboard stop downloading every row: search runs
+against a generated `tsvector` in Postgres, so the client can fetch one page at
+a time and still search everything.
 
 ## Verified, not assumed
 
@@ -54,6 +57,16 @@ sharing mints a 96-bit URL-safe slug, revoking clears it, re-sharing mints a
 *different* one, a trashed note stops being served, and `anon` can call
 `get_public_note()` while holding no grant at all on `notes`. The numbering bug
 above was found that way rather than by reading them.
+
+Search and paging are measured the same way, on 50,000 notes, **as the
+`authenticated` role with RLS applied** — measuring as superuser measures a
+different query, because without the `user_id` predicate RLS injects, none of
+the indexes apply. Page 1 is 0.5 ms, page 200 is 1.5 ms, every sort order is
+under a millisecond, and a rare search term is 16 ms. Two designs were rejected
+on those numbers rather than on taste: folding the total into each page with a
+window function (60x slower) and expressing the sort order as a CASE over a
+parameter (1000x slower, because a CASE is not an indexable expression). Both
+are documented in `0008` with the numbers.
 
 ## Three things worth knowing
 
@@ -104,6 +117,7 @@ public.notes
   deleted_at   timestamptz  non-null = in Trash; every live query filters this
   is_public    boolean      not null, default false
   public_slug  text         unique, minted and cleared by trigger — never by the client
+  search_vector tsvector    generated, stored; title + tags + extracted body text
 
 storage bucket `note-images`, public read, objects at `<user_id>/<filename>`
 ```
