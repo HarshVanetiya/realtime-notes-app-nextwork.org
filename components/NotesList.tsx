@@ -122,11 +122,13 @@ export default function NotesList({
         setTopZIndex((z) => z + 1);
     }
 
-    function handleOpenNote(note: Note) {
-        if (!isDesktop) {
-            router.push(`/notes/${note.id}`);
-            return;
-        }
+    // The card is a real link to the note. On desktop we intercept it to open a
+    // floating window instead; on mobile (and for ctrl/middle-click anywhere)
+    // the navigation is left alone.
+    function handleOpenNote(e: React.MouseEvent, note: Note) {
+        if (!isDesktop) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
         openWindow(note);
     }
 
@@ -251,9 +253,9 @@ export default function NotesList({
                     <div className={emptyStateIcon}>
                         <AlertCircle size={36} className="text-destructive" />
                     </div>
-                    <h3 className="mb-2 text-lg font-semibold text-foreground">
+                    <h2 className="mb-2 text-lg font-semibold text-foreground">
                         Couldn&apos;t load your notes
-                    </h3>
+                    </h2>
                     <p className="mb-6 max-w-sm break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                         {loadError}
                     </p>
@@ -273,9 +275,9 @@ export default function NotesList({
                     <div className={emptyStateIcon}>
                         <BookOpen size={36} className="text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
                         No notes yet
-                    </h3>
+                    </h2>
                     <p className="text-sm text-muted-foreground mb-6 max-w-xs">
                         Start capturing your thoughts, ideas, and anything worth
                         remembering.
@@ -295,9 +297,9 @@ export default function NotesList({
                     <div className={emptyStateIcon}>
                         <SearchX size={36} className="text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
                         No matching notes
-                    </h3>
+                    </h2>
                     <p className="text-sm text-muted-foreground mb-6 max-w-xs break-words [overflow-wrap:anywhere]">
                         Nothing here matches &ldquo;{query.trim()}&rdquo;
                         {isFavoritesView ? ' in your favorites' : ''}.
@@ -318,9 +320,9 @@ export default function NotesList({
                     <div className={emptyStateIcon}>
                         <TagIcon size={36} className="text-muted-foreground" />
                     </div>
-                    <h3 className="mb-2 text-lg font-semibold text-foreground">
+                    <h2 className="mb-2 text-lg font-semibold text-foreground">
                         Nothing tagged &ldquo;{activeTag}&rdquo;
-                    </h3>
+                    </h2>
                     <p className="mb-6 max-w-xs break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                         {isFavoritesView
                             ? 'No favorites carry this tag.'
@@ -342,9 +344,9 @@ export default function NotesList({
                     <div className={emptyStateIcon}>
                         <Star size={36} className="text-amber-400/80" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
                         No favorites yet
-                    </h3>
+                    </h2>
                     <p className="text-sm text-muted-foreground mb-6 max-w-xs">
                         Star a note to add it to your favorites for quick
                         access.
@@ -368,7 +370,7 @@ export default function NotesList({
                             note={note}
                             onDelete={handleDelete}
                             index={index}
-                            onClick={() => handleOpenNote(note)}
+                            onOpen={(e) => handleOpenNote(e, note)}
                         />
                     ))}
                 </div>
@@ -388,6 +390,13 @@ export default function NotesList({
 
     return (
         <>
+            {/* Every page needs an h1; the dashboard's is visual chrome-free,
+                so it is exposed to assistive tech only. */}
+            <h1 className="sr-only">
+                {isFavoritesView ? 'Favorite notes' : 'My notes'}
+                {activeTag ? ` tagged ${activeTag}` : ''}
+            </h1>
+
             {/* Notes grid */}
             <div className="animate-fade-in">
                 {notes.length > 0 && (

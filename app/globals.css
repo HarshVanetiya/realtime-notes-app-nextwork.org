@@ -87,6 +87,15 @@
     * {
         @apply border-border;
     }
+
+    /* Most custom-styled controls in this app set their own classes and lost
+       the shadcn focus ring in the process. `:where()` contributes zero
+       specificity, so this is a floor that any explicit focus style still
+       overrides — keyboard users get a visible ring everywhere by default. */
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+        outline: 2px solid hsl(var(--ring));
+        outline-offset: 2px;
+    }
     body {
         @apply bg-background text-foreground;
         font-family:
@@ -298,6 +307,24 @@
 .bn-editor .bn-block-content[data-content-type='codeBlock'],
 .bn-editor .bn-block-content[data-content-type='codeBlock'] > pre {
     min-width: 0;
+}
+
+/* Visually hidden but available to screen readers and reachable on focus. */
+.skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -3rem;
+    z-index: 200;
+    border-radius: 0.75rem;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: top 0.15s ease-out;
+}
+.skip-link:focus {
+    top: 0.75rem;
 }
 
 /* Respect the OS "reduce motion" setting: this UI is animation-heavy

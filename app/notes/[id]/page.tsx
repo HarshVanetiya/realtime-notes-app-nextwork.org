@@ -102,7 +102,7 @@ export default function IndividualNotePage({
     params: Promise<{ id: string }>;
 }) {
     return (
-        <div className="min-h-screen animate-fade-in bg-background pb-12">
+        <main className="min-h-screen animate-fade-in bg-background pb-12">
             <Suspense
                 fallback={
                     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-muted-foreground">
@@ -114,6 +114,6 @@ export default function IndividualNotePage({
                 {/* We pass the un-awaited Promise directly to the component inside Suspense */}
                 <NoteContent paramsPromise={params} />
             </Suspense>
-        </div>
+        </main>
     );
 }

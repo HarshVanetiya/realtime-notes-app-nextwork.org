@@ -23,6 +23,11 @@ export default function Editor({
     const { resolvedTheme } = useTheme();
 
     const editor = useCreateBlockNote({
+        // The ProseMirror surface is role="textbox"; without a name it is an
+        // unlabelled input to a screen reader.
+        domAttributes: {
+            editor: { 'aria-label': 'Note content' },
+        },
         uploadFile: async (file: File) => {
             const fileExt = file.name.split('.').pop();
             const filePath = `${userId}/inline-${Date.now()}.${fileExt}`;

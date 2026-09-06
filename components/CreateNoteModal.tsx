@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import NoteForm, { NOTE_DIALOG_CLASS } from './NoteForm';
 import { createClient } from '@/lib/supabase/client';
 
@@ -42,11 +47,10 @@ export default function CreateNoteModal({ children, open: controlledOpen, onOpen
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            {children && (
-                <span onClick={() => setOpen(true)}>
-                    {children}
-                </span>
-            )}
+            {/* DialogTrigger rather than a click handler on a span: it wires
+                up aria-haspopup/aria-expanded and returns focus to the trigger
+                when the dialog closes. */}
+            {children && <DialogTrigger asChild>{children}</DialogTrigger>}
             <DialogContent showCloseButton={false} className={NOTE_DIALOG_CLASS} aria-describedby={undefined}>
                 <DialogTitle className="sr-only">Create Note</DialogTitle>
                 {userId ? <NoteForm userId={userId} onSuccess={() => setOpen(false)} onCancel={() => setOpen(false)} /> : null}

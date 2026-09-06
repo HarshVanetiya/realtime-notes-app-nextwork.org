@@ -9,6 +9,9 @@ export default function NotesLayout({
 }) {
     return (
         <div className="flex min-h-screen bg-background">
+            <a href="#main-content" className="skip-link">
+                Skip to content
+            </a>
             {/* Wrap the sidebar in Suspense so usePathname doesn't block the build */}
             <Suspense
                 fallback={
@@ -18,7 +21,10 @@ export default function NotesLayout({
                 <AppSidebar />
             </Suspense>
 
-            <div className="flex min-w-0 flex-1 flex-col overflow-x-clip pt-14 lg:pt-0">
+            <div
+                id="main-content"
+                className="flex min-w-0 flex-1 flex-col overflow-x-clip pt-14 lg:pt-0"
+            >
                 {children}
             </div>
         </div>

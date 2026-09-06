@@ -253,7 +253,10 @@ export default function AppSidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
+            <nav
+                aria-label="Workspace"
+                className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin"
+            >
                 <p
                     className={`text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 px-3 mb-3 transition-all duration-300 truncate ${collapsed ? 'opacity-0 h-0 mb-0 pointer-events-none' : 'opacity-100 w-auto'}`}
                 >
@@ -327,6 +330,7 @@ export default function AppSidebar() {
                 <button
                     onClick={() => setIsOpen(true)}
                     aria-label="Open menu"
+                    aria-controls="mobile-nav"
                     aria-expanded={false}
                     className="lg:hidden fixed top-3 left-3 z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-card border border-border shadow-card text-foreground"
                 >
@@ -343,7 +347,13 @@ export default function AppSidebar() {
             )}
 
             {/* Mobile sidebar */}
+            {/* Closed, the drawer is only translated off-screen, so without
+                `inert` its links stay in the tab order and keyboard users tab
+                into an invisible menu. */}
             <aside
+                id="mobile-nav"
+                aria-label="Main menu"
+                inert={!isOpen}
                 className={`
           lg:hidden fixed left-0 top-0 z-40 h-full w-[min(18rem,85vw)] bg-background/95 backdrop-blur-md border-r border-border/50
           transition-transform duration-300 ease-out

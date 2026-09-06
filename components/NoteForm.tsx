@@ -318,7 +318,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                                     </span>
                                     PNG, JPG, WEBP up to 5 MB
                                 </p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <FileImage size={12} />
                                     <span>Images only</span>
                                 </div>
