@@ -6,8 +6,15 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/lib/use-media-query';
 import { extractPlainText } from '@/lib/note-text';
+import {
+    collectTags,
+    isSortValue,
+    sortNotes,
+    type SortValue,
+} from '@/lib/note-tags';
+import NoteToolbar from './NoteToolbar';
 import NoteCard from './NoteCard';
-import { BookOpen, Star, Search, Plus, X, SearchX } from 'lucide-react';
+import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon } from 'lucide-react';
 import CreateNoteModal from './CreateNoteModal';
 
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -34,7 +41,9 @@ type Note = {
     content: string | null;
     image_url: string | null;
     is_favorite: boolean;
+    tags: string[] | null; // null on rows fetched before the tags migration
     created_at: string;
+    updated_at?: string | null;
 };
 
 export default function NotesList({
@@ -47,6 +56,9 @@ export default function NotesList({
     const searchParams = useSearchParams();
     const router = useRouter();
     const isFavoritesView = searchParams.get('filter') === 'favorites';
+    const activeTag = searchParams.get('tag');
+    const sortParam = searchParams.get('sort');
+    const sort: SortValue = isSortValue(sortParam) ? sortParam : 'newest';
 
     // Floating windows are a pointer-and-keyboard affordance: draggable frames
     // wider than a phone. Below `lg` we open the note's own page instead.
@@ -121,7 +133,9 @@ export default function NotesList({
         notes.forEach((note) => {
             index.set(
                 note.id,
-                `${note.title} ${extractPlainText(note.content)}`.toLowerCase(),
+                `${note.title} ${(note.tags ?? []).join(' ')} ${extractPlainText(
+                    note.content,
+                )}`.toLowerCase(),
             );
         });
         return index;
@@ -134,19 +148,27 @@ export default function NotesList({
             ? notes.filter((note) => note.is_favorite)
             : notes;
 
+        if (activeTag) {
+            result = result.filter((note) =>
+                (note.tags ?? []).includes(activeTag),
+            );
+        }
+
         if (trimmedQuery) {
             result = result.filter((note) =>
                 (searchIndex.get(note.id) ?? '').includes(trimmedQuery),
             );
         }
 
-        return result;
-    }, [notes, isFavoritesView, trimmedQuery, searchIndex]);
+        return sortNotes(result, sort);
+    }, [notes, isFavoritesView, activeTag, trimmedQuery, searchIndex, sort]);
+
+    const availableTags = useMemo(() => collectTags(notes), [notes]);
 
     // A narrowed result set shouldn't inherit a scrolled-down count.
     useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [trimmedQuery, isFavoritesView]);
+    }, [trimmedQuery, isFavoritesView, activeTag, sort]);
 
     const hasMore = visibleCount < displayedNotes.length;
 
@@ -264,6 +286,30 @@ export default function NotesList({
             );
         }
 
+        if (displayedNotes.length === 0 && activeTag) {
+            return (
+                <div className={emptyStateWrapper}>
+                    <div className={emptyStateIcon}>
+                        <TagIcon size={36} className="text-muted-foreground" />
+                    </div>
+                    <h3 className="mb-2 text-lg font-semibold text-foreground">
+                        Nothing tagged &ldquo;{activeTag}&rdquo;
+                    </h3>
+                    <p className="mb-6 max-w-xs break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                        {isFavoritesView
+                            ? 'No favorites carry this tag.'
+                            : 'No notes carry this tag yet.'}
+                    </p>
+                    <button
+                        onClick={() => router.push('/notes')}
+                        className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-primary/40 hover:text-foreground"
+                    >
+                        Show all notes
+                    </button>
+                </div>
+            );
+        }
+
         if (displayedNotes.length === 0) {
             return (
                 <div className={emptyStateWrapper}>
@@ -317,7 +363,16 @@ export default function NotesList({
     return (
         <>
             {/* Notes grid */}
-            <div className="animate-fade-in">{renderContent()}</div>
+            <div className="animate-fade-in">
+                {notes.length > 0 && (
+                    <NoteToolbar
+                        tags={availableTags}
+                        activeTag={activeTag}
+                        sort={sort}
+                    />
+                )}
+                {renderContent()}
+            </div>
 
             {/* Render Windows — desktop only */}
             {isDesktop &&

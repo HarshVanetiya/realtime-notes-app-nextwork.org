@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { FileImage, X, Loader2, NotebookPen, ImagePlus } from 'lucide-react';
+import TagInput from './TagInput';
+import { collectTags } from '@/lib/note-tags';
 
 const Editor = dynamic(() => import('./Editor'), {
     ssr: false,
@@ -36,6 +38,7 @@ export type NoteData = {
     title: string;
     content: string | null;
     image_url: string | null;
+    tags?: string[] | null;
 };
 
 const TITLE_MAX_LENGTH = 200;
@@ -44,6 +47,8 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB — phone cameras easily exceed
 export default function NoteForm({ userId, onSuccess, onCancel, initialData }: { userId: string, onSuccess?: () => void, onCancel?: () => void, initialData?: NoteData }) {
     const [title, setTitle] = useState(initialData?.title || '');
     const [content, setContent] = useState(initialData?.content || '');
+    const [tags, setTags] = useState<string[]>(initialData?.tags ?? []);
+    const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null);
     const [imageError, setImageError] = useState<string | null>(null);
@@ -53,6 +58,21 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
     const router = useRouter();
+
+    useEffect(() => {
+        let cancelled = false;
+        async function loadTags() {
+            const { data } = await supabase.from('notes').select('tags');
+            if (cancelled || !data) return;
+            setTagSuggestions(collectTags(data).map((t) => t.tag));
+        }
+        loadTags();
+        return () => {
+            cancelled = true;
+        };
+        // supabase client is recreated per render; the fetch is one-shot on mount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     function handleFileSelect(file: File | null) {
         if (!file) return;
@@ -130,6 +150,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                         title: title.trim(),
                         content: content.trim() || null,
                         image_url: imageUrl,
+                        tags,
                     })
                     .eq('id', initialData.id);
 
@@ -142,6 +163,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                         title: title.trim(),
                         content: content.trim() || null,
                         image_url: imageUrl,
+                        tags,
                     });
 
                 if (error) throw error;
@@ -220,6 +242,12 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                             onChange={(html) => setContent(html)}
                         />
                     </div>
+
+                    <TagInput
+                        value={tags}
+                        onChange={setTags}
+                        suggestions={tagSuggestions}
+                    />
 
                     {/* Image upload */}
                     <div className="space-y-2">

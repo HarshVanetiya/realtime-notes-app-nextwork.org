@@ -6,6 +6,7 @@ import { Star, Trash2, ImageIcon, Edit2, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import EditNoteModal from './EditNoteModal';
+import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogContent,
@@ -20,7 +21,9 @@ type Note = {
     content: string | null;
     image_url: string | null;
     is_favorite: boolean;
+    tags: string[] | null;
     created_at: string;
+    updated_at?: string | null;
 };
 
 function timeAgo(dateStr: string): string {
@@ -219,6 +222,26 @@ export default function NoteCard({
                     </div>
                 )}
             </div>
+
+            {/* Tags — capped so a heavily tagged note can't unbalance the grid */}
+            {(note.tags ?? []).length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3">
+                    {(note.tags ?? []).slice(0, 3).map((tag) => (
+                        <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="max-w-full break-all py-0.5 font-medium"
+                        >
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(note.tags ?? []).length > 3 && (
+                        <span className="text-xs text-muted-foreground/70">
+                            +{(note.tags ?? []).length - 3}
+                        </span>
+                    )}
+                </div>
+            )}
 
             {/* Footer */}
             <div className="px-4 pb-4 flex items-center justify-between gap-2">

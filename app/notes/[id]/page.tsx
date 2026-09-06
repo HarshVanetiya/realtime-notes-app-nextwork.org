@@ -8,6 +8,7 @@ import { Suspense } from 'react';
 import NoteHtml from '@/components/NoteHtml';
 import { renderNoteHtml } from '@/lib/note-html';
 import EditNoteModal from '@/components/EditNoteModal';
+import { Badge } from '@/components/ui/badge';
 
 // 1. The inner component now receives the Promise directly and awaits it inside
 async function NoteContent({
@@ -68,6 +69,22 @@ async function NoteContent({
                     </EditNoteModal>
                 </div>
             </div>
+
+            {(note.tags ?? []).length > 0 && (
+                <div className="mx-auto max-w-4xl px-4 sm:px-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                        {(note.tags as string[]).map((tag: string) => (
+                            <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="break-all font-medium"
+                            >
+                                {tag}
+                            </Badge>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Note Content */}
             <div className="mx-auto mt-8 max-w-4xl px-4 sm:px-6">
