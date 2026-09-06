@@ -78,7 +78,7 @@ export function LoginForm({
               </Label>
               <Link
                 href="/auth/forgot-password"
-                className="text-xs text-primary hover:text-primary/80 transition-colors"
+                className="text-xs text-primary-text hover:text-primary-text/80 transition-colors"
               >
                 Forgot password?
               </Link>
@@ -118,7 +118,7 @@ export function LoginForm({
 
         <div className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link href="/auth/sign-up" className="text-primary font-medium hover:text-primary/80 transition-colors">
+          <Link href="/auth/sign-up" className="text-primary-text font-medium hover:text-primary-text/80 transition-colors">
             Sign up
           </Link>
         </div>

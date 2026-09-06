@@ -51,20 +51,16 @@ const HOVER_REVEAL =
 
 // Comfortable thumb target on touch, unchanged density on desktop.
 const ACTION_BUTTON =
-    'flex items-center justify-center h-10 w-10 lg:h-7 lg:w-7 rounded-lg transition-all duration-200';
+    'flex items-center justify-center h-10 w-10 lg:h-7 lg:w-7 rounded-lg transition-colors duration-fast ease-standard';
 
 export default function NoteCard({
     note,
     onDelete,
     index = 0,
-    onOpen,
 }: {
     note: Note;
     onDelete: (id: string) => void;
     index?: number;
-    /** Receives the click so the caller can preventDefault and open a window
-     *  instead of navigating. Left to navigate normally otherwise. */
-    onOpen?: (e: React.MouseEvent) => void;
 }) {
     const supabase = createClient();
     const toast = useToast();
@@ -116,14 +112,17 @@ export default function NoteCard({
         setIsTogglingFav(false);
     }
 
-    const staggerClass = `stagger-${Math.min(index + 1, 6)}`;
 
     return (
         <div
+            style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
             className={`
-                group relative flex flex-col rounded-2xl border border-border/50 bg-background/50 backdrop-blur-md
-                hover:border-border/80 hover:bg-foreground/5 hover:shadow-lg
-                transition-all duration-300 ease-out overflow-hidden animate-fade-in ${staggerClass}
+                group relative flex flex-col rounded-2xl border border-border/60 bg-card/70
+                hover:border-primary/30 hover:bg-foreground/[0.03] hover:shadow-lg
+                motion-safe:hover:-translate-y-0.5
+                overflow-hidden animate-fade-in
+                transition-[transform,box-shadow,border-color,background-color]
+                duration-base ease-standard
                 ${note.is_favorite ? 'border-amber-400/30 bg-amber-500/10' : ''}
                 ${isDeleting ? 'opacity-50 scale-95 pointer-events-none' : ''}
             `}
@@ -155,21 +154,20 @@ export default function NoteCard({
                     <h2 className="font-semibold text-foreground leading-snug line-clamp-2 flex-1 min-w-0 break-words [overflow-wrap:anywhere]">
                         <Link
                             href={`/notes/${note.id}`}
-                            onClick={onOpen}
                             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
                         >
                             {note.title}
                         </Link>
                     </h2>
                     <div
-                        className={`relative z-10 flex items-center gap-0.5 lg:gap-1 flex-shrink-0 transition-opacity duration-200 ${HOVER_REVEAL}`}
+                        className={`relative z-10 flex items-center gap-0.5 lg:gap-1 flex-shrink-0 transition-opacity duration-fast ease-standard ${HOVER_REVEAL}`}
                     >
                         {/* Edit button */}
                         <EditNoteModal initialData={note}>
                             <button
                                 title="Edit note"
                                 aria-label={`Edit ${note.title}`}
-                                className={`${ACTION_BUTTON} text-muted-foreground hover:text-primary hover:bg-primary/10`}
+                                className={`${ACTION_BUTTON} text-muted-foreground hover:text-primary-text hover:bg-primary/10`}
                             >
                                 <Edit2 size={15} />
                             </button>

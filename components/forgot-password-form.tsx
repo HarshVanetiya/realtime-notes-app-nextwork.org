@@ -67,7 +67,7 @@ export function ForgotPasswordForm({
             </p>
             <Link
               href="/auth/login"
-              className="text-sm text-primary font-medium hover:text-primary/80 transition-colors"
+              className="text-sm text-primary-text font-medium hover:text-primary-text/80 transition-colors"
             >
               Back to sign in
             </Link>
@@ -112,7 +112,7 @@ export function ForgotPasswordForm({
 
             <div className="text-center text-sm text-muted-foreground">
               Remember your password?{" "}
-              <Link href="/auth/login" className="text-primary font-medium hover:text-primary/80 transition-colors">
+              <Link href="/auth/login" className="text-primary-text font-medium hover:text-primary-text/80 transition-colors">
                 Sign in
               </Link>
             </div>

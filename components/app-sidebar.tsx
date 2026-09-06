@@ -141,7 +141,7 @@ export default function AppSidebar() {
                         )}
                         <Icon
                             size={17}
-                            className={`flex-shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
+                            className={`flex-shrink-0 transition-colors ${active ? 'text-primary-text' : 'text-muted-foreground group-hover:text-foreground'}`}
                         />
                         <span
                             className={`transition-all duration-300 truncate ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
@@ -156,7 +156,7 @@ export default function AppSidebar() {
                     transition-all duration-200 relative w-full text-left
                     ${
                         active
-                            ? ' text-primary shadow-sm'
+                            ? ' text-primary-text shadow-sm'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                     }
                     ${collapsed ? 'gap-0 px-2 py-3 justify-center' : 'gap-3 px-3 py-3'}
@@ -238,7 +238,7 @@ export default function AppSidebar() {
                     className={`transition-all duration-300 flex flex-col justify-center min-w-0 flex-1 ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
                 >
                     <h1 className="font-black text-2xl text-foreground tracking-tighter truncate lowercase flex items-baseline">
-                        slate<span className="text-primary font-black">.</span>
+                        slate<span className="text-primary-text font-black">.</span>
                     </h1>
                 </div>
                 {options?.onClose && (
@@ -277,7 +277,7 @@ export default function AppSidebar() {
                     aria-expanded={isProfileOpen}
                     className={`flex w-full items-center rounded-xl hover:bg-foreground/5 transition-colors group ${collapsed ? 'gap-0 p-0 cursor-default' : 'gap-3 px-2 py-2'}`}
                 >
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0 border border-primary/20">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold flex-shrink-0 border border-primary/20">
                         {initials}
                     </div>
                     <div
