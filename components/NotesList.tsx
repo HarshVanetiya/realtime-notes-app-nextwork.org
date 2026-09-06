@@ -5,9 +5,19 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/lib/use-media-query';
+import { useOnlineStatus } from '@/lib/use-online-status';
 import { extractPlainText } from '@/lib/note-text';
+import {
+    collectTags,
+    isSortValue,
+    sortNotes,
+    type SortValue,
+} from '@/lib/note-tags';
+import NoteToolbar from './NoteToolbar';
+import SyncStatusBanner from './SyncStatusBanner';
+import { useToast } from '@/components/toast-provider';
 import NoteCard from './NoteCard';
-import { BookOpen, Star, Search, Plus, X, SearchX } from 'lucide-react';
+import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle } from 'lucide-react';
 import CreateNoteModal from './CreateNoteModal';
 
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -34,26 +44,56 @@ type Note = {
     content: string | null;
     image_url: string | null;
     is_favorite: boolean;
+    tags: string[] | null; // null on rows fetched before the tags migration
     created_at: string;
+    updated_at?: string | null;
 };
 
 export default function NotesList({
     initialNotes,
     userId,
+    loadError = null,
 }: {
     initialNotes: Note[];
     userId: string;
+    /** Set when the server query failed — without it an empty list is
+     *  indistinguishable from "you have no notes", which is a lie. */
+    loadError?: string | null;
 }) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const isFavoritesView = searchParams.get('filter') === 'favorites';
+    const activeTag = searchParams.get('tag');
+    const sortParam = searchParams.get('sort');
+    const sort: SortValue = isSortValue(sortParam) ? sortParam : 'newest';
 
     // Floating windows are a pointer-and-keyboard affordance: draggable frames
     // wider than a phone. Below `lg` we open the note's own page instead.
     const isDesktop = useMediaQuery('(min-width: 1024px)');
 
+    const toast = useToast();
+    const isOnline = useOnlineStatus();
     const [notes, setNotes] = useState<Note[]>(initialNotes);
+
+    // Realtime never replays what was missed while disconnected, so a dropped
+    // subscription leaves this list quietly wrong until it is refetched.
+    const [channelState, setChannelState] = useState<
+        'connecting' | 'live' | 'interrupted'
+    >('connecting');
+    const [retryNonce, setRetryNonce] = useState(0);
+    const [showBanner, setShowBanner] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
+    const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const everLive = useRef(false);
+    const droppedSinceLive = useRef(false);
     const [query, setQuery] = useState('');
+    // initialNotes is a fresh array on every server render, so this is also what
+    // lets router.refresh() heal the list after a drop. Without it the useState
+    // seed above is read once and every later server render is ignored.
+    useEffect(() => {
+        setNotes(initialNotes);
+    }, [initialNotes]);
+
     // Cards are rendered in batches rather than all at once — the whole set
     // stays in state so search still covers every note.
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -106,11 +146,13 @@ export default function NotesList({
         setTopZIndex((z) => z + 1);
     }
 
-    function handleOpenNote(note: Note) {
-        if (!isDesktop) {
-            router.push(`/notes/${note.id}`);
-            return;
-        }
+    // The card is a real link to the note. On desktop we intercept it to open a
+    // floating window instead; on mobile (and for ctrl/middle-click anywhere)
+    // the navigation is left alone.
+    function handleOpenNote(e: React.MouseEvent, note: Note) {
+        if (!isDesktop) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
         openWindow(note);
     }
 
@@ -121,7 +163,9 @@ export default function NotesList({
         notes.forEach((note) => {
             index.set(
                 note.id,
-                `${note.title} ${extractPlainText(note.content)}`.toLowerCase(),
+                `${note.title} ${(note.tags ?? []).join(' ')} ${extractPlainText(
+                    note.content,
+                )}`.toLowerCase(),
             );
         });
         return index;
@@ -134,19 +178,27 @@ export default function NotesList({
             ? notes.filter((note) => note.is_favorite)
             : notes;
 
+        if (activeTag) {
+            result = result.filter((note) =>
+                (note.tags ?? []).includes(activeTag),
+            );
+        }
+
         if (trimmedQuery) {
             result = result.filter((note) =>
                 (searchIndex.get(note.id) ?? '').includes(trimmedQuery),
             );
         }
 
-        return result;
-    }, [notes, isFavoritesView, trimmedQuery, searchIndex]);
+        return sortNotes(result, sort);
+    }, [notes, isFavoritesView, activeTag, trimmedQuery, searchIndex, sort]);
+
+    const availableTags = useMemo(() => collectTags(notes), [notes]);
 
     // A narrowed result set shouldn't inherit a scrolled-down count.
     useEffect(() => {
         setVisibleCount(PAGE_SIZE);
-    }, [trimmedQuery, isFavoritesView]);
+    }, [trimmedQuery, isFavoritesView, activeTag, sort]);
 
     const hasMore = visibleCount < displayedNotes.length;
 
@@ -201,12 +253,80 @@ export default function NotesList({
                     }
                 },
             )
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    setChannelState('live');
+                } else if (
+                    status === 'CHANNEL_ERROR' ||
+                    status === 'TIMED_OUT' ||
+                    status === 'CLOSED'
+                ) {
+                    setChannelState('interrupted');
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [supabase, userId]);
+    }, [supabase, userId, retryNonce]);
+
+    // Anything that isn't live counts as degraded, including 'connecting'.
+    // Treating connecting as healthy made the banner unmount the instant Retry
+    // was pressed and reappear seconds later.
+    const degraded = !isOnline || channelState !== 'live';
+
+    // A rejoin often succeeds within a second or two; only a sustained failure
+    // is worth putting on screen. Losing the network is definitive, so that
+    // shows at once.
+    useEffect(() => {
+        if (!degraded) {
+            setShowBanner(false);
+            return;
+        }
+        if (!isOnline) {
+            setShowBanner(true);
+            return;
+        }
+        const timer = setTimeout(() => setShowBanner(true), 4000);
+        return () => clearTimeout(timer);
+    }, [degraded, isOnline]);
+
+    // Coming back is the moment the list has to be refetched — and the one
+    // moment worth a toast, because it is an event rather than a state.
+    useEffect(() => {
+        if (channelState === 'interrupted' && everLive.current) {
+            droppedSinceLive.current = true;
+        }
+        if (channelState !== 'live') return;
+
+        if (droppedSinceLive.current) {
+            droppedSinceLive.current = false;
+            router.refresh();
+            toast.success('Reconnected', {
+                description: 'Notes refreshed from the server.',
+            });
+        }
+        everLive.current = true;
+    }, [channelState, router, toast]);
+
+    function retrySync() {
+        // A failing channel can error again within milliseconds, so without a
+        // floor the spinner never paints and the click looks ignored.
+        setIsRetrying(true);
+        if (retryTimer.current) clearTimeout(retryTimer.current);
+        retryTimer.current = setTimeout(() => setIsRetrying(false), 1200);
+
+        setChannelState('connecting');
+        setRetryNonce((n) => n + 1);
+        router.refresh();
+    }
+
+    useEffect(
+        () => () => {
+            if (retryTimer.current) clearTimeout(retryTimer.current);
+        },
+        [],
+    );
 
     function handleDelete(id: string) {
         setNotes((current) => current.filter((note) => note.id !== id));
@@ -219,15 +339,37 @@ export default function NotesList({
         'w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-foreground/5 border border-border/50 shadow-sm flex items-center justify-center mb-6';
 
     function renderContent() {
+        if (loadError && notes.length === 0) {
+            return (
+                <div className={emptyStateWrapper}>
+                    <div className={emptyStateIcon}>
+                        <AlertCircle size={36} className="text-destructive" />
+                    </div>
+                    <h2 className="mb-2 text-lg font-semibold text-foreground">
+                        Couldn&apos;t load your notes
+                    </h2>
+                    <p className="mb-6 max-w-sm break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                        {loadError}
+                    </p>
+                    <button
+                        onClick={() => router.refresh()}
+                        className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+                    >
+                        Try again
+                    </button>
+                </div>
+            );
+        }
+
         if (notes.length === 0) {
             return (
                 <div className={emptyStateWrapper}>
                     <div className={emptyStateIcon}>
                         <BookOpen size={36} className="text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
                         No notes yet
-                    </h3>
+                    </h2>
                     <p className="text-sm text-muted-foreground mb-6 max-w-xs">
                         Start capturing your thoughts, ideas, and anything worth
                         remembering.
@@ -247,9 +389,9 @@ export default function NotesList({
                     <div className={emptyStateIcon}>
                         <SearchX size={36} className="text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
                         No matching notes
-                    </h3>
+                    </h2>
                     <p className="text-sm text-muted-foreground mb-6 max-w-xs break-words [overflow-wrap:anywhere]">
                         Nothing here matches &ldquo;{query.trim()}&rdquo;
                         {isFavoritesView ? ' in your favorites' : ''}.
@@ -264,15 +406,39 @@ export default function NotesList({
             );
         }
 
+        if (displayedNotes.length === 0 && activeTag) {
+            return (
+                <div className={emptyStateWrapper}>
+                    <div className={emptyStateIcon}>
+                        <TagIcon size={36} className="text-muted-foreground" />
+                    </div>
+                    <h2 className="mb-2 text-lg font-semibold text-foreground">
+                        Nothing tagged &ldquo;{activeTag}&rdquo;
+                    </h2>
+                    <p className="mb-6 max-w-xs break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                        {isFavoritesView
+                            ? 'No favorites carry this tag.'
+                            : 'No notes carry this tag yet.'}
+                    </p>
+                    <button
+                        onClick={() => router.push('/notes')}
+                        className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-primary/40 hover:text-foreground"
+                    >
+                        Show all notes
+                    </button>
+                </div>
+            );
+        }
+
         if (displayedNotes.length === 0) {
             return (
                 <div className={emptyStateWrapper}>
                     <div className={emptyStateIcon}>
                         <Star size={36} className="text-amber-400/80" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-2">
                         No favorites yet
-                    </h3>
+                    </h2>
                     <p className="text-sm text-muted-foreground mb-6 max-w-xs">
                         Star a note to add it to your favorites for quick
                         access.
@@ -296,7 +462,7 @@ export default function NotesList({
                             note={note}
                             onDelete={handleDelete}
                             index={index}
-                            onClick={() => handleOpenNote(note)}
+                            onOpen={(e) => handleOpenNote(e, note)}
                         />
                     ))}
                 </div>
@@ -316,8 +482,32 @@ export default function NotesList({
 
     return (
         <>
+            {/* Every page needs an h1; the dashboard's is visual chrome-free,
+                so it is exposed to assistive tech only. */}
+            <h1 className="sr-only">
+                {isFavoritesView ? 'Favorite notes' : 'My notes'}
+                {activeTag ? ` tagged ${activeTag}` : ''}
+            </h1>
+
+            {showBanner && (
+                <SyncStatusBanner
+                    state={isOnline ? 'interrupted' : 'offline'}
+                    onRetry={retrySync}
+                    isRetrying={isRetrying}
+                />
+            )}
+
             {/* Notes grid */}
-            <div className="animate-fade-in">{renderContent()}</div>
+            <div className="animate-fade-in">
+                {notes.length > 0 && (
+                    <NoteToolbar
+                        tags={availableTags}
+                        activeTag={activeTag}
+                        sort={sort}
+                    />
+                )}
+                {renderContent()}
+            </div>
 
             {/* Render Windows — desktop only */}
             {isDesktop &&

@@ -5,7 +5,10 @@ import { extractPlainText } from '@/lib/note-text';
 import { Star, Trash2, ImageIcon, Edit2, Loader2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import EditNoteModal from './EditNoteModal';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/toast-provider';
 import {
     Dialog,
     DialogContent,
@@ -20,7 +23,9 @@ type Note = {
     content: string | null;
     image_url: string | null;
     is_favorite: boolean;
+    tags: string[] | null;
     created_at: string;
+    updated_at?: string | null;
 };
 
 function timeAgo(dateStr: string): string {
@@ -52,14 +57,17 @@ export default function NoteCard({
     note,
     onDelete,
     index = 0,
-    onClick,
+    onOpen,
 }: {
     note: Note;
     onDelete: (id: string) => void;
     index?: number;
-    onClick?: () => void;
+    /** Receives the click so the caller can preventDefault and open a window
+     *  instead of navigating. Left to navigate normally otherwise. */
+    onOpen?: (e: React.MouseEvent) => void;
 }) {
     const supabase = createClient();
+    const toast = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -77,13 +85,16 @@ export default function NoteCard({
             .eq('id', note.id);
 
         if (error) {
-            console.error('Error deleting note:', error);
             setIsDeleting(false);
+            toast.error('Could not delete note', {
+                description: error.message,
+            });
             return;
         }
 
         setConfirmOpen(false);
         onDelete(note.id);
+        toast.success('Note deleted', { description: note.title });
     }
 
     async function toggleFavorite() {
@@ -93,7 +104,14 @@ export default function NoteCard({
             .update({ is_favorite: !note.is_favorite })
             .eq('id', note.id);
         if (error) {
-            console.error('Error toggling favorite:', error);
+            // The star is driven by realtime, so on failure it silently stays
+            // put — without this the user has no idea the tap did nothing.
+            toast.error(
+                note.is_favorite
+                    ? 'Could not remove from favorites'
+                    : 'Could not add to favorites',
+                { description: error.message },
+            );
         }
         setIsTogglingFav(false);
     }
@@ -102,7 +120,6 @@ export default function NoteCard({
 
     return (
         <div
-            onClick={onClick}
             className={`
                 group relative flex flex-col rounded-2xl border border-border/50 bg-background/50 backdrop-blur-md
                 hover:border-border/80 hover:bg-foreground/5 hover:shadow-lg
@@ -132,11 +149,20 @@ export default function NoteCard({
             {/* Body */}
             <div className="flex-1 p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-foreground leading-snug line-clamp-2 flex-1 min-w-0 break-words [overflow-wrap:anywhere]">
-                        {note.title}
-                    </h3>
+                    {/* A stretched link: real link semantics (ctrl/middle-click,
+                        announced as a link, reachable by Tab) while the whole
+                        card stays clickable via the ::after overlay. */}
+                    <h2 className="font-semibold text-foreground leading-snug line-clamp-2 flex-1 min-w-0 break-words [overflow-wrap:anywhere]">
+                        <Link
+                            href={`/notes/${note.id}`}
+                            onClick={onOpen}
+                            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+                        >
+                            {note.title}
+                        </Link>
+                    </h2>
                     <div
-                        className={`flex items-center gap-0.5 lg:gap-1 flex-shrink-0 transition-opacity duration-200 ${HOVER_REVEAL}`}
+                        className={`relative z-10 flex items-center gap-0.5 lg:gap-1 flex-shrink-0 transition-opacity duration-200 ${HOVER_REVEAL}`}
                     >
                         {/* Edit button */}
                         <EditNoteModal initialData={note}>
@@ -220,10 +246,30 @@ export default function NoteCard({
                 )}
             </div>
 
+            {/* Tags — capped so a heavily tagged note can't unbalance the grid */}
+            {(note.tags ?? []).length > 0 && (
+                <div className="relative z-10 flex flex-wrap items-center gap-1.5 px-4 pb-3">
+                    {(note.tags ?? []).slice(0, 3).map((tag) => (
+                        <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="max-w-full break-all py-0.5 font-medium"
+                        >
+                            {tag}
+                        </Badge>
+                    ))}
+                    {(note.tags ?? []).length > 3 && (
+                        <span className="text-xs text-muted-foreground">
+                            +{(note.tags ?? []).length - 3}
+                        </span>
+                    )}
+                </div>
+            )}
+
             {/* Footer */}
             <div className="px-4 pb-4 flex items-center justify-between gap-2">
                 <span
-                    className="text-xs text-muted-foreground/70"
+                    className="text-xs text-muted-foreground"
                     suppressHydrationWarning
                 >
                     {timeAgo(note.created_at)}

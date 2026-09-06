@@ -23,6 +23,11 @@ export default function Editor({
     const { resolvedTheme } = useTheme();
 
     const editor = useCreateBlockNote({
+        // The ProseMirror surface is role="textbox"; without a name it is an
+        // unlabelled input to a screen reader.
+        domAttributes: {
+            editor: { 'aria-label': 'Note content' },
+        },
         uploadFile: async (file: File) => {
             const fileExt = file.name.split('.').pop();
             const filePath = `${userId}/inline-${Date.now()}.${fileExt}`;
@@ -57,7 +62,7 @@ export default function Editor({
     }, [initialContent, editor]);
 
     return (
-        <div className="border-border/50 min-h-[200px] w-full overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary/50">
+        <div className="border-border/50 min-h-[200px] w-full min-w-0 overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary/50">
             <BlockNoteView
                 editor={editor}
                 theme={resolvedTheme === 'dark' ? 'dark' : 'light'}

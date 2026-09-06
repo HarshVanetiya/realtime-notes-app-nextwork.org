@@ -87,6 +87,15 @@
     * {
         @apply border-border;
     }
+
+    /* Most custom-styled controls in this app set their own classes and lost
+       the shadcn focus ring in the process. `:where()` contributes zero
+       specificity, so this is a floor that any explicit focus style still
+       overrides — keyboard users get a visible ring everywhere by default. */
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+        outline: 2px solid hsl(var(--ring));
+        outline-offset: 2px;
+    }
     body {
         @apply bg-background text-foreground;
         font-family:
@@ -269,11 +278,53 @@
 }
 
 /* BlockNote sets `white-space: pre-wrap`, which wraps at spaces but lets a
-   single long token (a pasted URL, a run-on string) run off the edge. Phase 1
-   fixed this for card titles and previews; note bodies need it too. */
-.read-only-editor .bn-inline-content,
-.read-only-editor .bn-block-content {
+   single long token (a pasted URL, a run-on string) run off the edge.
+   Scoped to `.bn-editor` rather than the read-only wrapper so it covers the
+   editable editor too — that one was missed, so a pasted URL in the create/edit
+   modal stayed one unbreakable line, which both clipped the text and pushed the
+   whole form wider than the dialog.
+   Prose only. */
+.bn-editor .bn-inline-content,
+.bn-editor .bn-block-content {
     overflow-wrap: anywhere;
+}
+
+/* Code blocks keep BlockNote's own behaviour. Their text sits in an inner
+   <code> with `white-space: pre-wrap`, so it already soft-wraps at spaces; the
+   rule above would additionally break mid-identifier, which is not what anyone
+   wants in code. Excluding them leaves a long unbroken token to scroll inside
+   the `overflow-x: auto` <pre>, which is what an editor should do. */
+.bn-editor .bn-block-content[data-content-type='codeBlock'],
+.bn-editor .bn-block-content[data-content-type='codeBlock'] * {
+    overflow-wrap: normal;
+}
+
+/* ...but "don't break" only works if the block is width-constrained. The <pre>
+   is a flex item, so it defaults to `min-width: auto` and grows to fit its
+   longest line instead of scrolling — which drags the whole form wider than the
+   dialog, the same blowout a long URL used to cause. `min-width: 0` lets it
+   shrink so its own `overflow-x: auto` actually engages. */
+.bn-editor .bn-block-content[data-content-type='codeBlock'],
+.bn-editor .bn-block-content[data-content-type='codeBlock'] > pre {
+    min-width: 0;
+}
+
+/* Visually hidden but available to screen readers and reachable on focus. */
+.skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -3rem;
+    z-index: 200;
+    border-radius: 0.75rem;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: top 0.15s ease-out;
+}
+.skip-link:focus {
+    top: 0.75rem;
 }
 
 /* Respect the OS "reduce motion" setting: this UI is animation-heavy

@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { FileImage, X, Loader2, NotebookPen, ImagePlus } from 'lucide-react';
+import TagInput from './TagInput';
+import { collectTags } from '@/lib/note-tags';
+import { useToast } from '@/components/toast-provider';
 
 const Editor = dynamic(() => import('./Editor'), {
     ssr: false,
@@ -15,11 +18,28 @@ const Editor = dynamic(() => import('./Editor'), {
     ),
 });
 
+/**
+ * Shared by CreateNoteModal and EditNoteModal.
+ *
+ * The width MUST be declared in the `sm:` modifier group. DialogContent merges
+ * its base classes through tailwind-merge, and the base includes `sm:max-w-lg`;
+ * a plain `max-w-*` here is a different modifier group, so it is not treated as
+ * a conflict, survives the merge, and then loses to `sm:max-w-lg` in the
+ * compiled CSS. That is how the modal ended up 512px wide while the code said
+ * `max-w-2xl`.
+ *
+ * `w-[calc(100%-2rem)]` restores the phone gutter: tailwind-merge dropped the
+ * base `max-w-[calc(100%-2rem)]` as a conflict, leaving the modal edge-to-edge.
+ */
+export const NOTE_DIALOG_CLASS =
+    'w-[calc(100%-2rem)] sm:w-full sm:max-w-[min(60vw,896px)] p-0 border-none bg-transparent shadow-none gap-0';
+
 export type NoteData = {
     id: string;
     title: string;
     content: string | null;
     image_url: string | null;
+    tags?: string[] | null;
 };
 
 const TITLE_MAX_LENGTH = 200;
@@ -28,6 +48,8 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB — phone cameras easily exceed
 export default function NoteForm({ userId, onSuccess, onCancel, initialData }: { userId: string, onSuccess?: () => void, onCancel?: () => void, initialData?: NoteData }) {
     const [title, setTitle] = useState(initialData?.title || '');
     const [content, setContent] = useState(initialData?.content || '');
+    const [tags, setTags] = useState<string[]>(initialData?.tags ?? []);
+    const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null);
     const [imageError, setImageError] = useState<string | null>(null);
@@ -37,6 +59,22 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
     const router = useRouter();
+    const toast = useToast();
+
+    useEffect(() => {
+        let cancelled = false;
+        async function loadTags() {
+            const { data } = await supabase.from('notes').select('tags');
+            if (cancelled || !data) return;
+            setTagSuggestions(collectTags(data).map((t) => t.tag));
+        }
+        loadTags();
+        return () => {
+            cancelled = true;
+        };
+        // supabase client is recreated per render; the fetch is one-shot on mount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     function handleFileSelect(file: File | null) {
         if (!file) return;
@@ -114,6 +152,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                         title: title.trim(),
                         content: content.trim() || null,
                         image_url: imageUrl,
+                        tags,
                     })
                     .eq('id', initialData.id);
 
@@ -126,10 +165,16 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                         title: title.trim(),
                         content: content.trim() || null,
                         image_url: imageUrl,
+                        tags,
                     });
 
                 if (error) throw error;
             }
+
+            toast.success(
+                initialData?.id ? 'Note updated' : 'Note created',
+                { description: title.trim() },
+            );
 
             if (onSuccess) {
                 router.refresh();
@@ -139,7 +184,6 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                 router.refresh();
             }
         } catch (error) {
-            console.error('Error creating note:', error);
             setSubmitError(
                 error instanceof Error
                     ? error.message
@@ -153,7 +197,11 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
     const titleNearLimit = title.length > TITLE_MAX_LENGTH - 40;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="w-full min-w-0 space-y-6">
+            {/* min-w-0: DialogContent is a grid, and a grid item defaults to
+                `min-width: auto` = min-content. Without this, one unbreakable
+                token anywhere in the editor (a URL, a long identifier in a code
+                block) widens the whole form past the dialog and clips it. */}
             {/* Card wrapper */}
             <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm">
                 <div className="p-4 sm:p-6 space-y-5">
@@ -200,6 +248,12 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                             onChange={(html) => setContent(html)}
                         />
                     </div>
+
+                    <TagInput
+                        value={tags}
+                        onChange={setTags}
+                        suggestions={tagSuggestions}
+                    />
 
                     {/* Image upload */}
                     <div className="space-y-2">
@@ -264,7 +318,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                                     </span>
                                     PNG, JPG, WEBP up to 5 MB
                                 </p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <FileImage size={12} />
                                     <span>Images only</span>
                                 </div>
