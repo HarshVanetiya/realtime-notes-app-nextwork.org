@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { FileImage, X, Loader2, NotebookPen, ImagePlus } from 'lucide-react';
 import TagInput from './TagInput';
 import { collectTags } from '@/lib/note-tags';
+import { useToast } from '@/components/toast-provider';
 
 const Editor = dynamic(() => import('./Editor'), {
     ssr: false,
@@ -58,6 +59,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const supabase = createClient();
     const router = useRouter();
+    const toast = useToast();
 
     useEffect(() => {
         let cancelled = false;
@@ -169,6 +171,11 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                 if (error) throw error;
             }
 
+            toast.success(
+                initialData?.id ? 'Note updated' : 'Note created',
+                { description: title.trim() },
+            );
+
             if (onSuccess) {
                 router.refresh();
                 onSuccess();
@@ -177,7 +184,6 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                 router.refresh();
             }
         } catch (error) {
-            console.error('Error creating note:', error);
             setSubmitError(
                 error instanceof Error
                     ? error.message

@@ -18,16 +18,15 @@ async function NotesContent() {
         .select()
         .order('created_at', { ascending: false });
 
-    if (error) {
-        console.error('Error fetching notes:', error);
-    }
-
-    const noteCount = notes?.length ?? 0;
 
     return (
         <>
             <main className="flex-1 p-6 overflow-auto scrollbar-thin">
-                <NotesList initialNotes={notes ?? []} userId={userId} />
+                <NotesList
+                    initialNotes={notes ?? []}
+                    userId={userId}
+                    loadError={error?.message ?? null}
+                />
             </main>
         </>
     );

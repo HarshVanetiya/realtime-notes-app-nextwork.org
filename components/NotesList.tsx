@@ -14,7 +14,7 @@ import {
 } from '@/lib/note-tags';
 import NoteToolbar from './NoteToolbar';
 import NoteCard from './NoteCard';
-import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon } from 'lucide-react';
+import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle } from 'lucide-react';
 import CreateNoteModal from './CreateNoteModal';
 
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -49,9 +49,13 @@ type Note = {
 export default function NotesList({
     initialNotes,
     userId,
+    loadError = null,
 }: {
     initialNotes: Note[];
     userId: string;
+    /** Set when the server query failed — without it an empty list is
+     *  indistinguishable from "you have no notes", which is a lie. */
+    loadError?: string | null;
 }) {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -241,6 +245,28 @@ export default function NotesList({
         'w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-foreground/5 border border-border/50 shadow-sm flex items-center justify-center mb-6';
 
     function renderContent() {
+        if (loadError && notes.length === 0) {
+            return (
+                <div className={emptyStateWrapper}>
+                    <div className={emptyStateIcon}>
+                        <AlertCircle size={36} className="text-destructive" />
+                    </div>
+                    <h3 className="mb-2 text-lg font-semibold text-foreground">
+                        Couldn&apos;t load your notes
+                    </h3>
+                    <p className="mb-6 max-w-sm break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
+                        {loadError}
+                    </p>
+                    <button
+                        onClick={() => router.refresh()}
+                        className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+                    >
+                        Try again
+                    </button>
+                </div>
+            );
+        }
+
         if (notes.length === 0) {
             return (
                 <div className={emptyStateWrapper}>

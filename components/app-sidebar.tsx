@@ -20,6 +20,7 @@ import {
 
 import Image from 'next/image';
 import CreateNoteModal from './CreateNoteModal';
+import { useToast } from '@/components/toast-provider';
 import notesIcon from '../public/notes-icon.svg';
 
 const navItems = [
@@ -52,6 +53,7 @@ export default function AppSidebar() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { resolvedTheme, setTheme } = useTheme();
+    const toast = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -97,7 +99,11 @@ export default function AppSidebar() {
 
     const handleLogout = async () => {
         const supabase = createClient();
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            toast.error('Could not sign out', { description: error.message });
+            return;
+        }
         router.push('/auth/login');
     };
 

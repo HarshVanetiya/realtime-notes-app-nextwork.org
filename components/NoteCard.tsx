@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import EditNoteModal from './EditNoteModal';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/toast-provider';
 import {
     Dialog,
     DialogContent,
@@ -63,6 +64,7 @@ export default function NoteCard({
     onClick?: () => void;
 }) {
     const supabase = createClient();
+    const toast = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -80,13 +82,16 @@ export default function NoteCard({
             .eq('id', note.id);
 
         if (error) {
-            console.error('Error deleting note:', error);
             setIsDeleting(false);
+            toast.error('Could not delete note', {
+                description: error.message,
+            });
             return;
         }
 
         setConfirmOpen(false);
         onDelete(note.id);
+        toast.success('Note deleted', { description: note.title });
     }
 
     async function toggleFavorite() {
@@ -96,7 +101,14 @@ export default function NoteCard({
             .update({ is_favorite: !note.is_favorite })
             .eq('id', note.id);
         if (error) {
-            console.error('Error toggling favorite:', error);
+            // The star is driven by realtime, so on failure it silently stays
+            // put — without this the user has no idea the tap did nothing.
+            toast.error(
+                note.is_favorite
+                    ? 'Could not remove from favorites'
+                    : 'Could not add to favorites',
+                { description: error.message },
+            );
         }
         setIsTogglingFav(false);
     }
