@@ -27,7 +27,11 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          // Text-on-background step. `text-primary` is a filled-surface colour
+          // and does not clear AA as body text; `text-primary-text` does.
+          text: "hsl(var(--primary-text))",
         },
+        success: "hsl(var(--success))",
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
@@ -94,9 +98,24 @@ export default {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
       },
       boxShadow: {
-        card: "0 2px 12px hsl(0 0% 0% / 0.08), 0 1px 3px hsl(0 0% 0% / 0.04)",
-        "card-dark":
-          "0 2px 8px hsl(0 0% 0% / 0.05), 0 1px 3px hsl(0 0% 0% / 0.03)",
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        xl: "var(--shadow-xl)",
+        card: "var(--shadow-md)",
+        "card-dark": "var(--shadow-md)",
+      },
+      transitionTimingFunction: {
+        standard: "var(--ease-standard)",
+        entrance: "var(--ease-entrance)",
+        exit: "var(--ease-exit)",
+        spring: "var(--ease-spring)",
+      },
+      transitionDuration: {
+        instant: "var(--duration-instant)",
+        fast: "var(--duration-fast)",
+        base: "var(--duration-base)",
+        slow: "var(--duration-slow)",
       },
     },
   },

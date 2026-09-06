@@ -307,7 +307,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                                     onClick={() => fileInputRef.current?.click()}
                                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted/40 sm:w-auto"
                                 >
-                                    <ImagePlus size={16} className="text-primary" />
+                                    <ImagePlus size={16} className="text-primary-text" />
                                     Choose image
                                 </button>
                                 <p className="text-center text-xs text-muted-foreground">

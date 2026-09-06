@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Loader2, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Suspense } from 'react';
 import NoteHtml from '@/components/NoteHtml';
 import { renderNoteHtml } from '@/lib/note-html';
@@ -62,7 +63,7 @@ async function NoteContent({
                         {note.title}
                     </h1>
                     <EditNoteModal initialData={note}>
-                        <button className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium text-sm">
+                        <button className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary-text hover:bg-primary/20 transition-colors font-medium text-sm">
                             <Pencil size={16} />
                             Edit Note
                         </button>
@@ -105,9 +106,19 @@ export default function IndividualNotePage({
         <main className="min-h-screen animate-fade-in bg-background pb-12">
             <Suspense
                 fallback={
-                    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-muted-foreground">
-                        <Loader2 className="animate-spin" size={32} />
-                        <p>Loading note...</p>
+                    <div
+                        role="status"
+                        aria-label="Loading note"
+                        className="mx-auto max-w-4xl px-4 pt-6 sm:px-6 sm:pt-12"
+                    >
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="mt-8 h-10 w-3/4" />
+                        <Skeleton className="mt-3 h-10 w-1/2" />
+                        <div className="mt-10 space-y-3">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-11/12" />
+                            <Skeleton className="h-4 w-4/5" />
+                        </div>
                     </div>
                 }
             >

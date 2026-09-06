@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
-import { useMediaQuery } from '@/lib/use-media-query';
 import { useOnlineStatus } from '@/lib/use-online-status';
 import { extractPlainText } from '@/lib/note-text';
 import {
@@ -21,19 +19,6 @@ import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle }
 import CreateNoteModal from './CreateNoteModal';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-
-// Pulls in BlockNote, Mantine, react-rnd and framer-motion. Windows are
-// desktop-only and open on demand, so this chunk should load on demand too —
-// a phone never fetches it at all.
-const NoteWindow = dynamic(() => import('./NoteWindow'), { ssr: false });
-
-export type WindowState = {
-    id: string; // usually note.id
-    note: Note;
-    isMinimized: boolean;
-    isMaximized: boolean;
-    zIndex: number;
-};
 
 const PAGE_SIZE = 24;
 
@@ -67,10 +52,6 @@ export default function NotesList({
     const sortParam = searchParams.get('sort');
     const sort: SortValue = isSortValue(sortParam) ? sortParam : 'newest';
 
-    // Floating windows are a pointer-and-keyboard affordance: draggable frames
-    // wider than a phone. Below `lg` we open the note's own page instead.
-    const isDesktop = useMediaQuery('(min-width: 1024px)');
-
     const toast = useToast();
     const isOnline = useOnlineStatus();
     const [notes, setNotes] = useState<Note[]>(initialNotes);
@@ -100,61 +81,7 @@ export default function NotesList({
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const supabase = createClient();
 
-    const [windows, setWindows] = useState<WindowState[]>([]);
-    const [topZIndex, setTopZIndex] = useState(10); // To keep track of the active window
 
-    // Inside NotesList.tsx, add these helper functions
-    function updateWindow(id: string, updates: Partial<WindowState>) {
-        setWindows((current) =>
-            current.map((w) => (w.id === id ? { ...w, ...updates } : w)),
-        );
-    }
-
-    function closeWindow(id: string) {
-        setWindows((current) => current.filter((w) => w.id !== id));
-    }
-
-    function bringToFront(id: string) {
-        setTopZIndex((z) => z + 1);
-        updateWindow(id, { zIndex: topZIndex + 1 });
-    }
-
-    // Function to open a note
-    function openWindow(note: Note) {
-        setWindows((current) => {
-            // If already open, just bring to front and unminimize
-            const existing = current.find((w) => w.id === note.id);
-            if (existing) {
-                return current.map((w) =>
-                    w.id === note.id
-                        ? { ...w, zIndex: topZIndex + 1, isMinimized: false }
-                        : w,
-                );
-            }
-            // Otherwise, open a new window
-            return [
-                ...current,
-                {
-                    id: note.id,
-                    note,
-                    isMinimized: false,
-                    isMaximized: false,
-                    zIndex: topZIndex + 1,
-                },
-            ];
-        });
-        setTopZIndex((z) => z + 1);
-    }
-
-    // The card is a real link to the note. On desktop we intercept it to open a
-    // floating window instead; on mobile (and for ctrl/middle-click anywhere)
-    // the navigation is left alone.
-    function handleOpenNote(e: React.MouseEvent, note: Note) {
-        if (!isDesktop) return;
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-        e.preventDefault();
-        openWindow(note);
-    }
 
     // Title + body text per note, so typing in the search box doesn't reparse
     // every note document on every keystroke.
@@ -330,11 +257,10 @@ export default function NotesList({
 
     function handleDelete(id: string) {
         setNotes((current) => current.filter((note) => note.id !== id));
-        closeWindow(id);
     }
 
     const emptyStateWrapper =
-        'flex flex-col items-center justify-center px-6 py-16 sm:py-24 text-center bg-background/50 backdrop-blur-sm border border-border/40 rounded-3xl mt-4';
+        'flex flex-col items-center justify-center px-6 py-16 sm:py-24 text-center bg-card/60 border border-border/50 rounded-3xl mt-4';
     const emptyStateIcon =
         'w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-foreground/5 border border-border/50 shadow-sm flex items-center justify-center mb-6';
 
@@ -462,7 +388,6 @@ export default function NotesList({
                             note={note}
                             onDelete={handleDelete}
                             index={index}
-                            onOpen={(e) => handleOpenNote(e, note)}
                         />
                     ))}
                 </div>
@@ -478,7 +403,6 @@ export default function NotesList({
         );
     }
 
-    const minimized = windows.filter((w) => w.isMinimized);
 
     return (
         <>
@@ -509,18 +433,6 @@ export default function NotesList({
                 {renderContent()}
             </div>
 
-            {/* Render Windows — desktop only */}
-            {isDesktop &&
-                windows.map((window) => (
-                    <NoteWindow
-                        key={window.id}
-                        window={window}
-                        updateWindow={updateWindow}
-                        closeWindow={closeWindow}
-                        bringToFront={bringToFront}
-                    />
-                ))}
-
             {/* Floating Bottom Navigation Islands.
                 Full-width shell so the row can never push past the viewport edge,
                 and safe-area padding so it clears the iOS home indicator. */}
@@ -533,7 +445,7 @@ export default function NotesList({
 
                         <Search
                             size={20}
-                            className="relative z-10 flex-shrink-0 text-muted-foreground transition-all duration-300 group-focus-within:text-primary"
+                            className="relative z-10 flex-shrink-0 text-muted-foreground transition-all duration-300 group-focus-within:text-primary-text"
                         />
                         <input
                             type="search"
@@ -570,50 +482,6 @@ export default function NotesList({
                         </button>
                     </CreateNoteModal>
 
-                    {/* Minimized Windows (Island 3+) — scrolls rather than
-                        widening the row once several notes are minimized. */}
-                    {isDesktop && minimized.length > 0 && (
-                        <div className="flex min-w-0 items-center gap-3 overflow-x-auto scrollbar-thin animate-in slide-in-from-left-4 fade-in duration-300">
-                            {/* Divider */}
-                            <div className="mx-1 h-8 w-px flex-shrink-0 rounded-full bg-border/80"></div>
-
-                            {minimized.map((w) => (
-                                <button
-                                    key={w.id}
-                                    onClick={() =>
-                                        updateWindow(w.id, {
-                                            isMinimized: false,
-                                            zIndex: topZIndex + 1,
-                                        })
-                                    }
-                                    title={w.note.title}
-                                    className="group relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/80 shadow-xl backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:scale-110 animate-in zoom-in-50 fade-in"
-                                >
-                                    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full">
-                                        {w.note.image_url ? (
-                                            <Image
-                                                src={w.note.image_url}
-                                                alt={w.note.title}
-                                                fill
-                                                sizes="56px"
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <BookOpen
-                                                size={20}
-                                                className="text-primary/70 transition-colors group-hover:text-primary"
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Tooltip on hover */}
-                                    <span className="pointer-events-none absolute -top-12 left-1/2 z-50 max-w-[200px] -translate-x-1/2 truncate rounded-lg bg-foreground/90 px-3 py-1.5 text-xs font-medium text-background opacity-0 shadow-lg backdrop-blur-sm transition-all duration-200 group-hover:opacity-100">
-                                        {w.note.title}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </div>
             </div>
         </>

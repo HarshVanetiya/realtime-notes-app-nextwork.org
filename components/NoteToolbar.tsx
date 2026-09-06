@@ -43,7 +43,7 @@ export default function NoteToolbar({
 
     const chip =
         'flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-    const chipOn = 'border-primary/50 bg-primary/15 text-primary';
+    const chipOn = 'border-primary/50 bg-primary/15 text-primary-text';
     const chipOff =
         'border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground';
 
