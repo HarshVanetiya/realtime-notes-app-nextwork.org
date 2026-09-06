@@ -18,4 +18,7 @@ export type Note = {
     updated_at?: string | null;
     /** Non-null means trashed (0007). Live queries filter this. */
     deleted_at?: string | null;
+    /** Sharing (0006). The slug is minted by a trigger, never by the client. */
+    is_public?: boolean | null;
+    public_slug?: string | null;
 };

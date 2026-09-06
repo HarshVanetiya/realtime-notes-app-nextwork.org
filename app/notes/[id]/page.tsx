@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil, Share2, Globe } from 'lucide-react';
+import ShareNoteDialog from '@/components/ShareNoteDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Suspense } from 'react';
 import NoteHtml from '@/components/NoteHtml';
@@ -63,12 +64,24 @@ async function NoteContent({
                     <h1 className="min-w-0 break-words [overflow-wrap:anywhere] text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
                         {note.title}
                     </h1>
+                    <div className="flex shrink-0 items-center gap-2">
+                    <ShareNoteDialog
+                        noteId={note.id}
+                        isPublic={!!note.is_public}
+                        publicSlug={note.public_slug ?? null}
+                    >
+                        <button className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors duration-fast ease-standard hover:border-primary/40">
+                            {note.is_public ? <Globe size={16} className="text-primary-text" /> : <Share2 size={16} />}
+                            {note.is_public ? 'Public' : 'Share'}
+                        </button>
+                    </ShareNoteDialog>
                     <EditNoteModal initialData={note}>
-                        <button className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary-text hover:bg-primary/20 transition-colors font-medium text-sm">
+                        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary-text hover:bg-primary/20 transition-colors font-medium text-sm">
                             <Pencil size={16} />
                             Edit Note
                         </button>
                     </EditNoteModal>
+                    </div>
                 </div>
             </div>
 
