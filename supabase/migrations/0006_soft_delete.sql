@@ -1,4 +1,4 @@
--- 0007_soft_delete.sql
+-- 0006_soft_delete.sql
 -- Soft delete, so that undo cannot lose data and a Trash view is possible.
 --
 -- Deleting used to be permanent behind a confirm dialog. Undo-by-reinsert was

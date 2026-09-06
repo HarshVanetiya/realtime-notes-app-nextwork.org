@@ -7,7 +7,7 @@ import TrashList from '@/components/TrashList';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Note } from '@/lib/note-types';
 
-export const metadata = { title: 'Trash · Slate' };
+export const metadata = { title: 'Trash' };
 
 function Shell({ children }: { children: React.ReactNode }) {
     return (

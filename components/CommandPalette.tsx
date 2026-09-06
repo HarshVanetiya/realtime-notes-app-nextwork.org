@@ -15,6 +15,7 @@ import {
     Search,
     ArrowDownUp,
     Keyboard,
+    Download,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { extractPlainText } from '@/lib/note-text';
@@ -238,6 +239,17 @@ export default function CommandPalette() {
                         <Command.Item value="all notes dashboard" onSelect={() => run(() => router.push('/notes'))} className={ITEM}>
                             <FileText size={15} className="flex-shrink-0 text-muted-foreground" />
                             All notes
+                        </Command.Item>
+                        <Command.Item
+                            value="export download all notes markdown backup"
+                            // A same-tab navigation to a route that answers with
+                            // Content-Disposition: attachment — the browser
+                            // downloads it and stays where it is.
+                            onSelect={() => run(() => { window.location.href = '/notes/export'; })}
+                            className={ITEM}
+                        >
+                            <Download size={15} className="flex-shrink-0 text-muted-foreground" />
+                            Export all notes as Markdown
                         </Command.Item>
                         <Command.Item value="keyboard shortcuts help" onSelect={() => run(() => setHelpOpen(true))} className={ITEM}>
                             <Keyboard size={15} className="flex-shrink-0 text-muted-foreground" />

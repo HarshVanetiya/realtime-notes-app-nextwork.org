@@ -545,6 +545,19 @@ export default function NotesList({
                 {activeTag ? ` tagged ${activeTag}` : ''}
             </h1>
 
+            {/* Filtering the grid changed what was on screen with no
+                announcement at all — to a screen reader the page simply went
+                quiet. Polite, so it waits for a pause in typing. */}
+            <p aria-live="polite" className="sr-only">
+                {trimmedQuery || activeTag || isFavoritesView
+                    ? `${displayedNotes.length} ${
+                          displayedNotes.length === 1 ? 'note' : 'notes'
+                      } shown${trimmedQuery ? ` for \u201c${query.trim()}\u201d` : ''}${
+                          activeTag ? ` tagged ${activeTag}` : ''
+                      }${isFavoritesView ? ' in favorites' : ''}`
+                    : ''}
+            </p>
+
             {(showBanner || queuedOps.length > 0) && (
                 <SyncStatusBanner
                     state={isOnline ? 'interrupted' : 'offline'}

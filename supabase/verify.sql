@@ -7,11 +7,12 @@ with checks as (
            exists (select 1 from information_schema.tables
                    where table_schema = 'public' and table_name = 'notes') as ok
     union all
-    select 'all 9 columns present',
+    select 'all 12 columns present',
            (select count(*) from information_schema.columns
             where table_schema = 'public' and table_name = 'notes'
               and column_name in ('id','user_id','title','content','image_url',
-                                  'is_favorite','tags','created_at','updated_at')) = 9
+                                  'is_favorite','tags','created_at','updated_at',
+                                  'deleted_at','is_public','public_slug')) = 12
     union all
     select 'RLS enabled on notes',
            (select relrowsecurity from pg_class where oid = 'public.notes'::regclass)
@@ -44,6 +45,58 @@ with checks as (
     select 'tags GIN index',
            exists (select 1 from pg_indexes
                    where schemaname = 'public' and indexname = 'notes_tags_idx')
+
+    -- 0006 soft delete
+    union all
+    select 'soft-delete partial indexes (0006)',
+           (select count(*) from pg_indexes
+            where schemaname = 'public'
+              and indexname in ('notes_live_idx','notes_trashed_idx')) = 2
+
+    -- 0007 public sharing. These are the security-critical rows: if the slug
+    -- index is missing two notes can share a URL, and if anon ever gains a
+    -- direct grant on notes then PostgREST will serve the whole table.
+    union all
+    select 'public_slug is unique (0007)',
+           exists (select 1 from pg_indexes
+                   where schemaname = 'public' and indexname = 'notes_public_slug_key')
+    union all
+    select 'slug trigger installed (0007)',
+           exists (select 1 from pg_trigger
+                   where tgrelid = 'public.notes'::regclass
+                     and tgname = 'notes_manage_public_slug')
+    union all
+    select 'get_public_note is SECURITY DEFINER (0007)',
+           (select prosecdef from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'get_public_note')
+    union all
+    select 'get_public_note pins search_path (0007)',
+           (select proconfig::text like '%search_path%'
+            from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'get_public_note')
+    union all
+    select 'anon can call get_public_note (0007)',
+           has_function_privilege('anon', 'public.get_public_note(text)', 'EXECUTE')
+    union all
+    select 'anon CANNOT read the notes table directly (0007)',
+           not has_table_privilege('anon', 'public.notes', 'SELECT')
+    union all
+    select 'no anon RLS policy on notes (0007)',
+           not exists (select 1 from pg_policies
+                       where schemaname = 'public' and tablename = 'notes'
+                         and 'anon' = any(roles))
+
+    -- 0009 constraints
+    union all
+    select 'title and tag constraints exist (0009)',
+           (select count(*) from pg_constraint
+            where conrelid = 'public.notes'::regclass
+              and conname in ('notes_title_length','notes_tags_count','notes_tag_shape')) = 3
+    union all
+    select 'those constraints are VALIDATED, not just NOT VALID (0009)',
+           (select bool_and(convalidated) from pg_constraint
+            where conrelid = 'public.notes'::regclass
+              and conname in ('notes_title_length','notes_tags_count','notes_tag_shape'))
 )
 select case when ok then 'PASS' else 'FAIL' end as result, check_name
 from checks

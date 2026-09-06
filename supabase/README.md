@@ -27,16 +27,50 @@ against a populated database is safe and changes nothing.
 | `0003_notes_realtime.sql` | Adds `notes` to the realtime publication and sets `replica identity full` |
 | `0004_storage_note_images.sql` | The `note-images` bucket and per-user folder isolation |
 | `0005_tags_and_updated_at.sql` | `tags` + `updated_at`, their indexes, and the trigger that maintains `updated_at` |
+| `0006_soft_delete.sql` | `deleted_at` and its partial indexes — what makes delete undoable and Trash possible |
+| `0007_public_sharing.sql` | `is_public`, `public_slug`, the slug trigger, and the `get_public_note()` function behind `/n/[slug]` |
+| `0009_constraints.sql` | Title length and tag limits, enforced by the database rather than only by the form |
 
-`verify.sql` is read-only and checks all ten of the above landed.
+`verify.sql` is read-only and checks all of the above landed — 20 checks.
 
-## Two things worth knowing
+### If you already ran an earlier copy of these files
+
+`0006` and `0007` were originally numbered the other way round: sharing was
+`0006` and soft delete was `0007`. That was wrong — `get_public_note()` filters
+on `deleted_at`, so running them in numeric order failed with *column
+n.deleted_at does not exist*. They have been swapped so numeric order is
+dependency order. If you already applied the old pair successfully (in the
+other order), nothing changes: the files are idempotent and re-running them in
+the new order is a no-op.
+
+There is no `0008` yet — it is reserved for full-text search.
+
+## Verified, not assumed
+
+These files are applied to a real PostgreSQL 16 instance in numeric order from
+an empty database, then applied a second time to prove idempotency, then
+exercised: the constraints reject a 201-character title and a ninth tag,
+sharing mints a 96-bit URL-safe slug, revoking clears it, re-sharing mints a
+*different* one, a trashed note stops being served, and `anon` can call
+`get_public_note()` while holding no grant at all on `notes`. The numbering bug
+above was found that way rather than by reading them.
+
+## Three things worth knowing
 
 **`replica identity full` in 0003 is not optional.** With the default replica
 identity a `DELETE` only writes the primary key to the WAL. Realtime then cannot
 evaluate the RLS policy — which tests `user_id` — against the deleted row, so it
 drops the event. Deleting a note would leave it on screen in every other open
 tab until reload. `full` ships the whole old row so the policy can be checked.
+
+**`notes` has no `anon` policy, deliberately.** Public sharing does not go
+through RLS at all. An `anon` SELECT policy would let anyone query
+`/rest/v1/notes?select=user_id&is_public=eq.true` through PostgREST — leaking
+owner ids and enumerating every public note on the platform. Instead the table
+stays sealed and a single `security definer` function chooses the columns, so
+column leakage is structurally impossible and reading a note requires knowing
+its 96-bit slug. Its `search_path` is pinned, without which a definer function
+is hijackable.
 
 **The `note-images` bucket is public-read, deliberately.** The app calls
 `getPublicUrl`, and `<img>` / `next/image` fetch those URLs without a session.
@@ -67,6 +101,9 @@ public.notes
   tags         text[]       not null, default '{}'
   created_at   timestamptz  not null, default now()
   updated_at   timestamptz  not null, default now(), maintained by trigger
+  deleted_at   timestamptz  non-null = in Trash; every live query filters this
+  is_public    boolean      not null, default false
+  public_slug  text         unique, minted and cleared by trigger — never by the client
 
 storage bucket `note-images`, public read, objects at `<user_id>/<filename>`
 ```

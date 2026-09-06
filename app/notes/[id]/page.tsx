@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Pencil, Share2, Globe } from 'lucide-react';
+import { ArrowLeft, Download, Pencil, Share2, Globe } from 'lucide-react';
 import ShareNoteDialog from '@/components/ShareNoteDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Suspense } from 'react';
@@ -11,6 +11,31 @@ import NoteHtml from '@/components/NoteHtml';
 import { renderNoteHtml } from '@/lib/note-html';
 import EditNoteModal from '@/components/EditNoteModal';
 import { Badge } from '@/components/ui/badge';
+
+/**
+ * A private note, so the title is for the owner's own tab and history — and
+ * `noindex` because a signed-in page must never end up in a search index. The
+ * public route at /n/[slug] is where sharing metadata belongs.
+ */
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ id: string }>;
+}) {
+    const { id } = await params;
+    const supabase = await createClient();
+    const { data } = await supabase
+        .from('notes')
+        .select('title')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .single();
+
+    return {
+        title: data?.title || 'Note',
+        robots: { index: false, follow: false },
+    };
+}
 
 // 1. The inner component now receives the Promise directly and awaits it inside
 async function NoteContent({
@@ -65,6 +90,18 @@ async function NoteContent({
                         {note.title}
                     </h1>
                     <div className="flex shrink-0 items-center gap-2">
+                    {/* A plain link, not a fetch-and-blob: the browser handles
+                        the download, and the route's Content-Disposition names
+                        the file. */}
+                    <a
+                        href={`/notes/export?id=${note.id}`}
+                        download
+                        title="Download as Markdown"
+                        className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors duration-fast ease-standard hover:border-primary/40"
+                    >
+                        <Download size={16} />
+                        <span className="sr-only sm:not-sr-only">Export</span>
+                    </a>
                     <ShareNoteDialog
                         noteId={note.id}
                         isPublic={!!note.is_public}

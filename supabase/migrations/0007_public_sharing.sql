@@ -1,4 +1,10 @@
--- 0006_public_sharing.sql
+-- 0007_public_sharing.sql
+--
+-- REQUIRES 0006 (soft delete): get_public_note() filters on deleted_at, so a
+-- trashed note stops being served. These two files were originally numbered
+-- the other way round, which meant running them in numeric order failed on
+-- "column n.deleted_at does not exist" — found by applying the whole set to a
+-- real Postgres rather than trusting the numbering.
 -- Publishing a single note at an unguessable URL.
 --
 -- READ THIS BEFORE RUNNING IT. Everything else in this project fails safe; a

@@ -35,6 +35,8 @@ async function NotesContent() {
     );
 }
 
+export const metadata = { title: 'My notes' };
+
 export default function NotesPage() {
     return (
         <Suspense

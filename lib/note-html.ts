@@ -54,3 +54,27 @@ export async function renderNoteHtml(
         return makeCodeBlocksFocusable(await bn.blocksToFullHTML(blocks));
     }
 }
+
+/**
+ * Markdown for export. "Lossy" is BlockNote's own word for it and it is
+ * accurate — anything with no Markdown equivalent (background colours, custom
+ * blocks) is flattened — but Markdown is the format that opens in every other
+ * notes app, which is the point of an export.
+ */
+export async function renderNoteMarkdown(
+    content: string | null | undefined,
+): Promise<string> {
+    if (!content) return '';
+
+    const bn = getEditor();
+
+    try {
+        const blocks = JSON.parse(content);
+        if (!Array.isArray(blocks) || blocks.length === 0) return '';
+        return await bn.blocksToMarkdownLossy(blocks);
+    } catch {
+        const blocks = await bn.tryParseHTMLToBlocks(content);
+        if (blocks.length === 0) return '';
+        return await bn.blocksToMarkdownLossy(blocks);
+    }
+}
