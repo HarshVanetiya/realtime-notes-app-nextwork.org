@@ -32,7 +32,7 @@ against a populated database is safe and changes nothing.
 | `0008_full_text_search.sql` | `search_vector` + GIN, the sort/paging indexes, and `search_notes()` / `count_notes()` / `note_tags()` |
 | `0009_constraints.sql` | Title length and tag limits, enforced by the database rather than only by the form |
 
-`verify.sql` is read-only and checks all of the above landed — 20 checks.
+`verify.sql` is read-only and checks all of the above landed — 27 checks.
 
 ### If you already ran an earlier copy of these files
 

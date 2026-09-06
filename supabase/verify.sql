@@ -86,6 +86,45 @@ with checks as (
                        where schemaname = 'public' and tablename = 'notes'
                          and 'anon' = any(roles))
 
+    -- 0008 full-text search and paging
+    union all
+    select 'search_vector is a generated column (0008)',
+           (select is_generated = 'ALWAYS' from information_schema.columns
+            where table_schema = 'public' and table_name = 'notes'
+              and column_name = 'search_vector')
+    union all
+    select 'search GIN index (0008)',
+           exists (select 1 from pg_indexes
+                   where schemaname = 'public' and indexname = 'notes_search_idx')
+    union all
+    select 'one paging index per sort order (0008)',
+           (select count(*) from pg_indexes
+            where schemaname = 'public'
+              and indexname in ('notes_live_page_idx','notes_live_updated_idx',
+                                'notes_live_title_idx','notes_favorites_idx')) = 4
+    union all
+    select 'search_notes, count_notes and note_tags exist (0008)',
+           (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public'
+              and p.proname in ('search_notes','count_notes','note_tags','matching_notes')) = 4
+    union all
+    -- The important one. A definer function here would hand every caller the
+    -- whole table; RLS only applies because these run as the invoker.
+    select 'the search functions are SECURITY INVOKER, so RLS applies (0008)',
+           (select bool_and(not prosecdef) from pg_proc p
+            join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public'
+              and p.proname in ('search_notes','count_notes','note_tags','matching_notes'))
+    union all
+    select 'anon cannot execute search_notes (0008)',
+           not has_function_privilege('anon',
+               'public.search_notes(text,text,boolean,text,integer,integer)', 'EXECUTE')
+    union all
+    select 'note_search_text is IMMUTABLE, as the generated column requires (0008)',
+           (select provolatile = 'i' from pg_proc p
+            join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'note_search_text')
+
     -- 0009 constraints
     union all
     select 'title and tag constraints exist (0009)',
