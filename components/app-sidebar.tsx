@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes';
 import {
     BookOpen,
     FilePlus,
+    Search,
     Star,
     SquareKanban,
     LogOut,
@@ -25,6 +26,14 @@ import notesIcon from '../public/notes-icon.svg';
 
 const navItems = [
     { href: '/notes', label: 'My Notes', icon: BookOpen, exact: true },
+    {
+        href: '#',
+        action: 'search',
+        label: 'Search',
+        icon: Search,
+        exact: false,
+        shortcut: '⌘K',
+    },
     {
         href: '#',
         action: 'create-note',
@@ -161,6 +170,28 @@ export default function AppSidebar() {
                     }
                     ${collapsed ? 'gap-0 px-2 py-3 justify-center' : 'gap-3 px-3 py-3'}
                 `;
+
+                if (item.action === 'search') {
+                    return (
+                        <button
+                            key={item.label}
+                            className={itemClassName}
+                            onClick={() => {
+                                setIsOpen(false);
+                                document.dispatchEvent(
+                                    new CustomEvent('open-command-palette'),
+                                );
+                            }}
+                        >
+                            {itemContent}
+                            {!collapsed && (
+                                <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                    {item.shortcut}
+                                </kbd>
+                            )}
+                        </button>
+                    );
+                }
 
                 if (item.action === 'create-note') {
                     return (
