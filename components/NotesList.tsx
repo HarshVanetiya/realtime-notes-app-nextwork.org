@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useOnlineStatus } from '@/lib/use-online-status';
 import { extractPlainText } from '@/lib/note-text';
@@ -18,6 +17,8 @@ import { useToast } from '@/components/toast-provider';
 import NoteCard from './NoteCard';
 import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle } from 'lucide-react';
 import CreateNoteModal from './CreateNoteModal';
+import FirstRunPanel from './FirstRunPanel';
+import { dismissOnboarding, hasDismissedOnboarding } from '@/lib/onboarding';
 
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -63,6 +64,24 @@ export default function NotesList({
     useEffect(() => {
         setNotes(initialNotes);
     }, [initialNotes]);
+
+    // Onboarding is decided on the client, because the flag lives in
+    // localStorage and doesn't exist during the server render. Seeding this
+    // from storage in useState would hydration-mismatch, so it starts false and
+    // an effect corrects it — one frame of the plain empty state, which is the
+    // honest thing to show before we know.
+    const [showFirstRun, setShowFirstRun] = useState(false);
+    useEffect(() => {
+        if (notes.length > 0) {
+            // They already have notes, so onboarding is moot — record that,
+            // otherwise emptying the list later would introduce a first run to
+            // someone who is plainly not a first-time user.
+            dismissOnboarding();
+            setShowFirstRun(false);
+            return;
+        }
+        setShowFirstRun(!hasDismissedOnboarding());
+    }, [notes.length]);
 
     // Cards are rendered in batches rather than all at once — the whole set
     // stays in state so search still covers every note.
@@ -293,6 +312,15 @@ export default function NotesList({
             );
         }
 
+        if (notes.length === 0 && showFirstRun) {
+            return (
+                <FirstRunPanel
+                    userId={userId}
+                    onDismiss={() => setShowFirstRun(false)}
+                />
+            );
+        }
+
         if (notes.length === 0) {
             return (
                 <div className={emptyStateWrapper}>
@@ -328,12 +356,30 @@ export default function NotesList({
                         Nothing here matches &ldquo;{query.trim()}&rdquo;
                         {isFavoritesView ? ' in your favorites' : ''}.
                     </p>
-                    <button
-                        onClick={() => setQuery('')}
-                        className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-                    >
-                        Clear search
-                    </button>
+                    <div className="flex flex-col items-center gap-3 sm:flex-row">
+                        <button
+                            onClick={() => setQuery('')}
+                            className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+                        >
+                            Clear search
+                        </button>
+                        {/* Nothing here matches, so hand the query onward
+                            rather than leaving a dead end. The palette owns the
+                            web search, so this reuses it instead of building a
+                            second one. */}
+                        <button
+                            onClick={() =>
+                                document.dispatchEvent(
+                                    new CustomEvent('open-command-palette', {
+                                        detail: { query: query.trim() },
+                                    }),
+                                )
+                            }
+                            className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+                        >
+                            Search the web instead
+                        </button>
+                    </div>
                 </div>
             );
         }

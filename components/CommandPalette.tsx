@@ -73,7 +73,12 @@ export default function CommandPalette() {
                 setHelpOpen(true);
             }
         }
-        function onOpenRequest() {
+        // Callers can seed the search box — the "search the web instead" action
+        // in an empty result set hands its query straight over rather than
+        // making the user retype it.
+        function onOpenRequest(e: Event) {
+            const seed = (e as CustomEvent<{ query?: string }>).detail?.query;
+            if (typeof seed === 'string') setQuery(seed);
             setOpen(true);
         }
         document.addEventListener('keydown', onKeyDown);
@@ -297,6 +302,12 @@ export default function CommandPalette() {
                         This opens a new tab — it is not an embedded search. */}
                     {trimmed.length > 0 && (
                         <Command.Group
+                            // The item is forceMount, but cmdk still marks a
+                            // group hidden when its own filter matches nothing
+                            // in it — which hid the web search behind the very
+                            // "nothing matches, try the web search below" text
+                            // that points at it.
+                            forceMount
                             heading="Web"
                             className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground"
                         >
