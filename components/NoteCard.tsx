@@ -2,31 +2,14 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { extractPlainText } from '@/lib/note-text';
-import { Star, Trash2, ImageIcon, Edit2, Loader2 } from 'lucide-react';
+import type { Note } from '@/lib/note-types';
+import { Star, Trash2, ImageIcon, Edit2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import EditNoteModal from './EditNoteModal';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/toast-provider';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
-
-type Note = {
-    id: string;
-    title: string;
-    content: string | null;
-    image_url: string | null;
-    is_favorite: boolean;
-    tags: string[] | null;
-    created_at: string;
-    updated_at?: string | null;
-};
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -56,41 +39,70 @@ const ACTION_BUTTON =
 export default function NoteCard({
     note,
     onDelete,
+    onRestore,
     index = 0,
 }: {
     note: Note;
     onDelete: (id: string) => void;
+    /** Puts the note back after an undo, or after a failed delete. */
+    onRestore?: (note: Note) => void;
     index?: number;
 }) {
     const supabase = createClient();
     const toast = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
-    const [confirmOpen, setConfirmOpen] = useState(false);
 
     const previewText = useMemo(
         () => extractPlainText(note.content),
         [note.content],
     );
 
-    async function handleDelete() {
-        setIsDeleting(true);
+    async function restore() {
         const { error } = await supabase
             .from('notes')
-            .delete()
+            .update({ deleted_at: null })
             .eq('id', note.id);
 
         if (error) {
-            setIsDeleting(false);
+            toast.error('Could not restore note', {
+                description: error.message,
+            });
+            return;
+        }
+        onRestore?.(note);
+        toast.success('Note restored');
+    }
+
+    async function handleDelete() {
+        // Optimistic: the card goes immediately, because waiting on a round
+        // trip to remove something makes deletion feel broken.
+        setIsDeleting(true);
+        onDelete(note.id);
+
+        const { error } = await supabase
+            .from('notes')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', note.id);
+
+        setIsDeleting(false);
+
+        if (error) {
+            // Put it back rather than leaving the UI claiming a delete that
+            // never happened.
+            onRestore?.(note);
             toast.error('Could not delete note', {
                 description: error.message,
             });
             return;
         }
 
-        setConfirmOpen(false);
-        onDelete(note.id);
-        toast.success('Note deleted', { description: note.title });
+        // Undo is a one-column update, so it cannot fail the way re-inserting a
+        // destroyed row could.
+        toast.success('Note moved to trash', {
+            description: note.title,
+            action: { label: 'Undo', onClick: () => void restore() },
+        });
     }
 
     async function toggleFavorite() {
@@ -206,7 +218,7 @@ export default function NoteCard({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setConfirmOpen(true);
+                                void handleDelete();
                             }}
                             title="Delete note"
                             aria-label={`Delete ${note.title}`}
@@ -279,47 +291,6 @@ export default function NoteCard({
                 )}
             </div>
 
-            {/* Delete confirmation — deleting a note is irreversible. */}
-            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <DialogContent
-                    className="sm:max-w-md"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <DialogTitle>Delete note?</DialogTitle>
-                    <DialogDescription className="break-words [overflow-wrap:anywhere]">
-                        &ldquo;{note.title}&rdquo; will be permanently deleted.
-                        This can&apos;t be undone.
-                    </DialogDescription>
-                    <DialogFooter className="mt-2">
-                        <button
-                            type="button"
-                            onClick={() => setConfirmOpen(false)}
-                            disabled={isDeleting}
-                            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition-all"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => void handleDelete()}
-                            disabled={isDeleting}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
-                        >
-                            {isDeleting ? (
-                                <>
-                                    <Loader2 size={15} className="animate-spin" />
-                                    Deleting...
-                                </>
-                            ) : (
-                                <>
-                                    <Trash2 size={15} />
-                                    Delete
-                                </>
-                            )}
-                        </button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

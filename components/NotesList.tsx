@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useOnlineStatus } from '@/lib/use-online-status';
 import { extractPlainText } from '@/lib/note-text';
+import type { Note } from '@/lib/note-types';
 import {
     collectTags,
     isSortValue,
@@ -21,18 +22,6 @@ import CreateNoteModal from './CreateNoteModal';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 const PAGE_SIZE = 24;
-
-type Note = {
-    id: string;
-    user_id: string;
-    title: string;
-    content: string | null;
-    image_url: string | null;
-    is_favorite: boolean;
-    tags: string[] | null; // null on rows fetched before the tags migration
-    created_at: string;
-    updated_at?: string | null;
-};
 
 export default function NotesList({
     initialNotes,
@@ -170,13 +159,22 @@ export default function NotesList({
                             ),
                         );
                     } else if (payload.eventType === 'UPDATE') {
-                        setNotes((current) =>
-                            current.map((note) =>
-                                note.id === (payload.new as Note).id
-                                    ? (payload.new as Note)
-                                    : note,
-                            ),
-                        );
+                        const updated = payload.new as Note;
+                        setNotes((current) => {
+                            // Soft delete arrives here, not as a DELETE event.
+                            if (updated.deleted_at) {
+                                return current.filter(
+                                    (note) => note.id !== updated.id,
+                                );
+                            }
+                            // Restored elsewhere: it is not in this list yet.
+                            if (!current.some((note) => note.id === updated.id)) {
+                                return [updated, ...current];
+                            }
+                            return current.map((note) =>
+                                note.id === updated.id ? updated : note,
+                            );
+                        });
                     }
                 },
             )
@@ -257,6 +255,14 @@ export default function NotesList({
 
     function handleDelete(id: string) {
         setNotes((current) => current.filter((note) => note.id !== id));
+    }
+
+    function handleRestore(note: Note) {
+        setNotes((current) =>
+            current.some((n) => n.id === note.id)
+                ? current
+                : [note, ...current],
+        );
     }
 
     const emptyStateWrapper =
@@ -387,6 +393,7 @@ export default function NotesList({
                             key={note.id}
                             note={note}
                             onDelete={handleDelete}
+                            onRestore={handleRestore}
                             index={index}
                         />
                     ))}

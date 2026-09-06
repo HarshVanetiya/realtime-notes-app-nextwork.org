@@ -12,6 +12,7 @@ import {
     Search,
     Star,
     SquareKanban,
+    Trash2,
     LogOut,
     Menu,
     X,
@@ -48,6 +49,7 @@ const navItems = [
         exact: false,
         isFavorites: true,
     },
+    { href: '/notes/trash', label: 'Trash', icon: Trash2, exact: true },
     {
         href: 'https://todoist-five-brown.vercel.app/',
         label: 'Kanban Board',

@@ -24,6 +24,7 @@ async function NoteContent({
         .from('notes')
         .select('*')
         .eq('id', id)
+        .is('deleted_at', null)
         .single();
 
     if (error || !note) {

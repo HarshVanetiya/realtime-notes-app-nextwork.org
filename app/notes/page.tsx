@@ -17,6 +17,8 @@ async function NotesContent() {
     const { data: notes, error } = await supabase
         .from('notes')
         .select()
+        // Trashed notes live in /notes/trash, never in the main list.
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
 

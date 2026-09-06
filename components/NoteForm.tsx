@@ -64,7 +64,10 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
     useEffect(() => {
         let cancelled = false;
         async function loadTags() {
-            const { data } = await supabase.from('notes').select('tags');
+            const { data } = await supabase
+                .from('notes')
+                .select('tags')
+                .is('deleted_at', null);
             if (cancelled || !data) return;
             setTagSuggestions(collectTags(data).map((t) => t.tag));
         }

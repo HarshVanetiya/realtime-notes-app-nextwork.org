@@ -100,6 +100,7 @@ export default function CommandPalette() {
                 const { data, error } = await supabase
                     .from('notes')
                     .select('id,title,tags,content')
+                    .is('deleted_at', null)
                     .order('created_at', { ascending: false })
                     .abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
                 if (cancelled) return;
