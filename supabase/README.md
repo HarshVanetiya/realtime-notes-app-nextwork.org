@@ -32,7 +32,34 @@ against a populated database is safe and changes nothing.
 | `0008_full_text_search.sql` | `search_vector` + GIN, the sort/paging indexes, and `search_notes()` / `count_notes()` / `note_tags()` |
 | `0009_constraints.sql` | Title length and tag limits, enforced by the database rather than only by the form |
 
-`verify.sql` is read-only and checks all of the above landed — 27 checks.
+`verify.sql` is read-only and checks all of the above landed — 27 checks. It asserts
+*properties* rather than counting objects, which it did not always do: three earlier
+versions reported FAIL on a perfectly healthy project, once by counting policies and twice
+by assuming grants that Supabase sets by design. A check that cries wolf is worse than no
+check, because the next real finding gets ignored.
+
+### Do not run `0004` to "fix" storage policies
+
+`0001`–`0004` are for recreating the app on a **fresh** project. A database that came from
+the tutorial already has them, and its bucket was created through the Supabase dashboard —
+so its policies have generated names (`... 6bl3n7_0`) and different wording. Such a setup
+can be entirely correct with just **two** policies: a folder-scoped INSERT and a
+folder-scoped SELECT.
+
+That covers everything this app does. Every upload path is unique by construction
+(`${userId}/${Date.now()}.${ext}`), so `.upload()` never needs UPDATE, and nothing in the
+codebase calls `.remove()`, so DELETE is never exercised.
+
+Running `0004` on such a project does not help, and slightly hurts:
+
+- It cannot tighten anything. Permissive policies are combined with **OR**, and `0004`
+  drops only its *own* policy names — yours stay, so a broad policy keeps letting writes
+  through no matter what is added beside it.
+- Its SELECT policy (`to public using (bucket_id = 'note-images')`) is *broader* than a
+  folder-scoped one.
+
+If a write policy really is too loose, `drop policy` it first. `verify.sql` tells you
+whether that is the case; the diagnostic at the bottom of that file shows you which policy.
 
 ### If you already ran an earlier copy of these files
 

@@ -32,15 +32,43 @@ with checks as (
     select 'note-images bucket exists',
            exists (select 1 from storage.buckets where id = 'note-images')
     union all
-    -- Matches the bucket name anywhere in the policy, including its name:
-    -- a project whose bucket was created through the Supabase dashboard rather
-    -- than by 0004 has policies with different wording, and the earlier version
-    -- of this check only looked at the USING / WITH CHECK expressions.
-    select 'storage policies for note-images',
-           (select count(*) from pg_policies
-            where schemaname = 'storage' and tablename = 'objects'
-              and coalesce(qual, '') || coalesce(with_check, '') || policyname
-                  like '%note-images%') >= 4
+    -- Asserts the security property, not a headcount.
+    --
+    -- This used to require FOUR policies mentioning the bucket, which failed on
+    -- a real project that was entirely correct: a bucket created through the
+    -- Supabase dashboard has TWO (an INSERT and a SELECT, both folder-scoped),
+    -- and that covers everything the app does — every upload path is unique, so
+    -- nothing ever needs UPDATE, and nothing in the codebase calls .remove().
+    --
+    -- Counting policies was never the point. The property that matters is that
+    -- a write cannot escape the caller's own folder, so that is what this tests:
+    -- one folder-scoped write policy must exist, and no write policy may reach
+    -- the bucket without pinning the folder.
+    --
+    -- Deliberately scoped to policies that NAME note-images. Sweeping every
+    -- policy on storage.objects would flag unrelated buckets in the same
+    -- project — which is the same over-reach being fixed here.
+    --
+    -- SELECT is intentionally not checked: the bucket is public = true and the
+    -- app reads through getPublicUrl, which bypasses RLS entirely (see the
+    -- note on public buckets in README.md).
+    select 'note-images writes are folder-scoped (0004)',
+           exists (
+               select 1 from pg_policies
+               where schemaname = 'storage' and tablename = 'objects'
+                 and cmd in ('INSERT', 'ALL')
+                 and coalesce(with_check, '') like '%note-images%'
+                 and coalesce(with_check, '') like '%foldername%'
+           )
+           and not exists (
+               -- The one way a write policy on this bucket can be too loose:
+               -- it names the bucket but never pins the folder.
+               select 1 from pg_policies
+               where schemaname = 'storage' and tablename = 'objects'
+                 and cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL')
+                 and coalesce(qual, '') || coalesce(with_check, '') like '%note-images%'
+                 and coalesce(qual, '') || coalesce(with_check, '') not like '%foldername%'
+           )
     union all
     select 'updated_at trigger installed',
            exists (select 1 from pg_trigger
@@ -167,17 +195,22 @@ order by ok, check_name;
 --       select count(*) from public.notes;   -- must be 0
 --       reset role;
 --
--- 2. If "storage policies for note-images" fails, look at what your project
---    actually has before changing anything — a bucket created through the
---    dashboard has policies with different names and wording, and they may be
---    perfectly correct:
+-- 2. If "note-images writes are folder-scoped" fails, look at what your
+--    project actually has before changing anything — a bucket created through
+--    the dashboard has policies with different names and wording, and they may
+--    be perfectly correct:
 --
 --       select policyname, cmd, roles, qual, with_check
 --       from pg_policies
 --       where schemaname = 'storage' and tablename = 'objects';
 --
---    What matters is that INSERT/UPDATE/DELETE on the note-images bucket are
---    confined to the caller's own folder — the shape 0004 writes as
+--    What matters is that writes to the note-images bucket are confined to the
+--    caller's own folder — the shape 0004 writes as
 --    `(storage.foldername(name))[1] = auth.uid()::text`. If yours does that
---    under any name, you are fine. If it does not, run 0004.
+--    under any name, you are fine and 0004 has nothing to add.
+--
+--    Do NOT reach for 0004 to fix a policy that is too loose. Permissive
+--    policies are combined with OR, so adding a strict one alongside a broad
+--    one changes nothing — the broad one still lets the write through. Drop the
+--    offending policy first.
 -- ---------------------------------------------------------------------------
