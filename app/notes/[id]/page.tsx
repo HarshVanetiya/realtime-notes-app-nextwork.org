@@ -3,13 +3,39 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, Download, Pencil, Share2, Globe } from 'lucide-react';
+import ShareNoteDialog from '@/components/ShareNoteDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Suspense } from 'react';
 import NoteHtml from '@/components/NoteHtml';
 import { renderNoteHtml } from '@/lib/note-html';
 import EditNoteModal from '@/components/EditNoteModal';
 import { Badge } from '@/components/ui/badge';
+
+/**
+ * A private note, so the title is for the owner's own tab and history — and
+ * `noindex` because a signed-in page must never end up in a search index. The
+ * public route at /n/[slug] is where sharing metadata belongs.
+ */
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ id: string }>;
+}) {
+    const { id } = await params;
+    const supabase = await createClient();
+    const { data } = await supabase
+        .from('notes')
+        .select('title')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .single();
+
+    return {
+        title: data?.title || 'Note',
+        robots: { index: false, follow: false },
+    };
+}
 
 // 1. The inner component now receives the Promise directly and awaits it inside
 async function NoteContent({
@@ -24,6 +50,7 @@ async function NoteContent({
         .from('notes')
         .select('*')
         .eq('id', id)
+        .is('deleted_at', null)
         .single();
 
     if (error || !note) {
@@ -62,12 +89,36 @@ async function NoteContent({
                     <h1 className="min-w-0 break-words [overflow-wrap:anywhere] text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
                         {note.title}
                     </h1>
+                    <div className="flex shrink-0 items-center gap-2">
+                    {/* A plain link, not a fetch-and-blob: the browser handles
+                        the download, and the route's Content-Disposition names
+                        the file. */}
+                    <a
+                        href={`/notes/export?id=${note.id}`}
+                        download
+                        title="Download as Markdown"
+                        className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors duration-fast ease-standard hover:border-primary/40"
+                    >
+                        <Download size={16} />
+                        <span className="sr-only sm:not-sr-only">Export</span>
+                    </a>
+                    <ShareNoteDialog
+                        noteId={note.id}
+                        isPublic={!!note.is_public}
+                        publicSlug={note.public_slug ?? null}
+                    >
+                        <button className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors duration-fast ease-standard hover:border-primary/40">
+                            {note.is_public ? <Globe size={16} className="text-primary-text" /> : <Share2 size={16} />}
+                            {note.is_public ? 'Public' : 'Share'}
+                        </button>
+                    </ShareNoteDialog>
                     <EditNoteModal initialData={note}>
-                        <button className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary-text hover:bg-primary/20 transition-colors font-medium text-sm">
+                        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary-text hover:bg-primary/20 transition-colors font-medium text-sm">
                             <Pencil size={16} />
                             Edit Note
                         </button>
                     </EditNoteModal>
+                    </div>
                 </div>
             </div>
 

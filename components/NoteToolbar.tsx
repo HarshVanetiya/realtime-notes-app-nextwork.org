@@ -68,7 +68,13 @@ export default function NoteToolbar({
                             className={`${chip} ${on ? chipOn : chipOff}`}
                         >
                             {tag}
-                            <span className="ml-1.5 opacity-60 tabular-nums">
+                            {/* No opacity here. At 60% over the chip's own
+                                background the count fell below the AA contrast
+                                threshold — axe caught it once a fixture
+                                rendered the chips with real counts. The
+                                tabular figures and the position already read
+                                as secondary without dimming them. */}
+                            <span className="ml-1.5 tabular-nums">
                                 {count}
                             </span>
                         </button>

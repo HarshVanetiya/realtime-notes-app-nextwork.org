@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import {
     BookOpen,
     FilePlus,
+    Search,
     Star,
     SquareKanban,
+    Trash2,
     LogOut,
     Menu,
     X,
@@ -27,6 +29,14 @@ const navItems = [
     { href: '/notes', label: 'My Notes', icon: BookOpen, exact: true },
     {
         href: '#',
+        action: 'search',
+        label: 'Search',
+        icon: Search,
+        exact: false,
+        shortcut: '⌘K',
+    },
+    {
+        href: '#',
         action: 'create-note',
         label: 'Create Note',
         icon: FilePlus,
@@ -39,6 +49,7 @@ const navItems = [
         exact: false,
         isFavorites: true,
     },
+    { href: '/notes/trash', label: 'Trash', icon: Trash2, exact: true },
     {
         href: 'https://todoist-five-brown.vercel.app/',
         label: 'Kanban Board',
@@ -79,22 +90,86 @@ export default function AppSidebar() {
         setIsOpen(false);
     }, [pathname, searchParams]);
 
-    // While the drawer is open: lock the page behind it and allow Escape out.
+    const drawerRef = useRef<HTMLElement | null>(null);
+    const hamburgerRef = useRef<HTMLButtonElement | null>(null);
+    const shouldRestoreFocus = useRef(false);
+
+    // While the drawer is open: lock the page behind it, keep focus inside it,
+    // and allow Escape out.
+    //
+    // `inert` on the closed drawer already keeps its links out of the tab order.
+    // The reverse was still missing: with the drawer *open*, Tab walked straight
+    // out into the page underneath it, which is invisible behind the overlay —
+    // a keyboard user ended up somewhere they could not see, with no way back.
     useEffect(() => {
         if (!isOpen) return;
 
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
 
+        // Captured now: by cleanup time the ref may already point elsewhere.
+        const drawer = drawerRef.current;
+
+        const focusable = () =>
+            Array.from(
+                drawer?.querySelectorAll<HTMLElement>(
+                    'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+                ) ?? [],
+            ).filter((el) => el.offsetParent !== null);
+
+        // Focus the drawer itself rather than its first link: announcing the
+        // menu's name before its contents is the point of labelling it.
+        drawer?.focus({ preventScroll: true });
+
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setIsOpen(false);
+            if (e.key === 'Escape') {
+                setIsOpen(false);
+                return;
+            }
+            if (e.key !== 'Tab') return;
+
+            const items = focusable();
+            if (items.length === 0) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            const active = document.activeElement;
+
+            if (!drawer?.contains(active)) {
+                e.preventDefault();
+                (e.shiftKey ? last : first).focus();
+                return;
+            }
+            if (e.shiftKey && active === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && active === last) {
+                e.preventDefault();
+                first.focus();
+            }
         };
         document.addEventListener('keydown', onKeyDown);
 
         return () => {
             document.body.style.overflow = previousOverflow;
             document.removeEventListener('keydown', onKeyDown);
+            // Only if focus is still inside the drawer — a navigation that
+            // closed it has already moved focus somewhere more useful.
+            //
+            // The hamburger cannot be focused from here: it is unmounted while
+            // the drawer is open (it would sit on top of the drawer's own
+            // header), so at cleanup time the element to return to does not
+            // exist yet. Hence a flag, consumed by the effect below once it is
+            // back in the tree — without that, Escape dropped focus to <body>.
+            if (drawer?.contains(document.activeElement)) {
+                shouldRestoreFocus.current = true;
+            }
         };
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (isOpen || !shouldRestoreFocus.current) return;
+        shouldRestoreFocus.current = false;
+        hamburgerRef.current?.focus();
     }, [isOpen]);
 
     const handleLogout = async () => {
@@ -161,6 +236,28 @@ export default function AppSidebar() {
                     }
                     ${collapsed ? 'gap-0 px-2 py-3 justify-center' : 'gap-3 px-3 py-3'}
                 `;
+
+                if (item.action === 'search') {
+                    return (
+                        <button
+                            key={item.label}
+                            className={itemClassName}
+                            onClick={() => {
+                                setIsOpen(false);
+                                document.dispatchEvent(
+                                    new CustomEvent('open-command-palette'),
+                                );
+                            }}
+                        >
+                            {itemContent}
+                            {!collapsed && (
+                                <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                    {item.shortcut}
+                                </kbd>
+                            )}
+                        </button>
+                    );
+                }
 
                 if (item.action === 'create-note') {
                     return (
@@ -328,6 +425,7 @@ export default function AppSidebar() {
                 would otherwise sit on top of the drawer's own brand header. */}
             {!isOpen && (
                 <button
+                    ref={hamburgerRef}
                     onClick={() => setIsOpen(true)}
                     aria-label="Open menu"
                     aria-controls="mobile-nav"
@@ -352,7 +450,11 @@ export default function AppSidebar() {
                 into an invisible menu. */}
             <aside
                 id="mobile-nav"
+                ref={drawerRef}
                 aria-label="Main menu"
+                aria-modal={isOpen || undefined}
+                role={isOpen ? 'dialog' : undefined}
+                tabIndex={-1}
                 inert={!isOpen}
                 className={`
           lg:hidden fixed left-0 top-0 z-40 h-full w-[min(18rem,85vw)] bg-background/95 backdrop-blur-md border-r border-border/50

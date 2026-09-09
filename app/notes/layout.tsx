@@ -1,5 +1,6 @@
 // app/notes/layout.tsx
 import AppSidebar from '@/components/app-sidebar';
+import CommandPalette from '@/components/CommandPalette';
 import { Suspense } from 'react';
 
 export default function NotesLayout({
@@ -19,6 +20,12 @@ export default function NotesLayout({
                 }
             >
                 <AppSidebar />
+            </Suspense>
+
+            {/* Mounted at the layout so ⌘K works on the dashboard and on a
+                note alike, and so it survives navigation between them. */}
+            <Suspense fallback={null}>
+                <CommandPalette />
             </Suspense>
 
             <div

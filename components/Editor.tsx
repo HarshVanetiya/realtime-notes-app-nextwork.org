@@ -52,7 +52,7 @@ export default function Editor({
         try {
             const blocks = JSON.parse(initialContent);
             editor.replaceBlocks(editor.document, blocks);
-        } catch (e) {
+        } catch {
             async function loadOldHtml() {
                 const blocks = await editor.tryParseHTMLToBlocks(initialContent as string);
                 editor.replaceBlocks(editor.document, blocks);

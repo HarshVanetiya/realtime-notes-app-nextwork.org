@@ -2,31 +2,15 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { extractPlainText } from '@/lib/note-text';
-import { Star, Trash2, ImageIcon, Edit2, Loader2 } from 'lucide-react';
+import type { Note } from '@/lib/note-types';
+import { Star, Trash2, ImageIcon, Edit2, CloudUpload } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import EditNoteModal from './EditNoteModal';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/toast-provider';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
-
-type Note = {
-    id: string;
-    title: string;
-    content: string | null;
-    image_url: string | null;
-    is_favorite: boolean;
-    tags: string[] | null;
-    created_at: string;
-    updated_at?: string | null;
-};
+import { updateNote } from '@/lib/notes-api';
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -56,49 +40,78 @@ const ACTION_BUTTON =
 export default function NoteCard({
     note,
     onDelete,
+    onRestore,
     index = 0,
+    pending = false,
 }: {
     note: Note;
     onDelete: (id: string) => void;
+    /** Puts the note back after an undo, or after a failed delete. */
+    onRestore?: (note: Note) => void;
     index?: number;
+    /** Written offline and not yet on the server. */
+    pending?: boolean;
 }) {
     const supabase = createClient();
     const toast = useToast();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
-    const [confirmOpen, setConfirmOpen] = useState(false);
 
     const previewText = useMemo(
         () => extractPlainText(note.content),
         [note.content],
     );
 
-    async function handleDelete() {
-        setIsDeleting(true);
-        const { error } = await supabase
-            .from('notes')
-            .delete()
-            .eq('id', note.id);
+    async function restore() {
+        const { error, queued } = await updateNote(supabase, note.id, {
+            deleted_at: null,
+        });
 
         if (error) {
-            setIsDeleting(false);
-            toast.error('Could not delete note', {
-                description: error.message,
-            });
+            toast.error('Could not restore note', { description: error });
+            return;
+        }
+        onRestore?.(note);
+        toast.success(queued ? 'Restored offline' : 'Note restored', {
+            description: queued ? 'Will sync when you reconnect.' : undefined,
+        });
+    }
+
+    async function handleDelete() {
+        // Optimistic: the card goes immediately, because waiting on a round
+        // trip to remove something makes deletion feel broken.
+        setIsDeleting(true);
+        onDelete(note.id);
+
+        const { error, queued } = await updateNote(supabase, note.id, {
+            deleted_at: new Date().toISOString(),
+        });
+
+        setIsDeleting(false);
+
+        if (error) {
+            // Put it back rather than leaving the UI claiming a delete that
+            // never happened.
+            onRestore?.(note);
+            toast.error('Could not delete note', { description: error });
             return;
         }
 
-        setConfirmOpen(false);
-        onDelete(note.id);
-        toast.success('Note deleted', { description: note.title });
+        // Undo is a one-column update, so it cannot fail the way re-inserting a
+        // destroyed row could — and offline it is queued the same way.
+        toast.success(queued ? 'Moved to trash offline' : 'Note moved to trash', {
+            description: queued
+                ? `\u201c${note.title}\u201d will sync when you reconnect.`
+                : note.title,
+            action: { label: 'Undo', onClick: () => void restore() },
+        });
     }
 
     async function toggleFavorite() {
         setIsTogglingFav(true);
-        const { error } = await supabase
-            .from('notes')
-            .update({ is_favorite: !note.is_favorite })
-            .eq('id', note.id);
+        const { error } = await updateNote(supabase, note.id, {
+            is_favorite: !note.is_favorite,
+        });
         if (error) {
             // The star is driven by realtime, so on failure it silently stays
             // put — without this the user has no idea the tap did nothing.
@@ -106,7 +119,7 @@ export default function NoteCard({
                 note.is_favorite
                     ? 'Could not remove from favorites'
                     : 'Could not add to favorites',
-                { description: error.message },
+                { description: error },
             );
         }
         setIsTogglingFav(false);
@@ -206,7 +219,7 @@ export default function NoteCard({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setConfirmOpen(true);
+                                void handleDelete();
                             }}
                             title="Delete note"
                             aria-label={`Delete ${note.title}`}
@@ -272,54 +285,24 @@ export default function NoteCard({
                 >
                     {timeAgo(note.created_at)}
                 </span>
-                {note.is_favorite && (
-                    <span className="text-xs font-medium text-amber-500/80 bg-amber-400/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                        Favorite
-                    </span>
-                )}
+                <span className="flex flex-shrink-0 items-center gap-2">
+                    {pending && (
+                        <span
+                            title="Saved on this device — not yet synced"
+                            className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-text"
+                        >
+                            <CloudUpload size={11} />
+                            Pending sync
+                        </span>
+                    )}
+                    {note.is_favorite && (
+                        <span className="text-xs font-medium text-amber-500/80 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                            Favorite
+                        </span>
+                    )}
+                </span>
             </div>
 
-            {/* Delete confirmation — deleting a note is irreversible. */}
-            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <DialogContent
-                    className="sm:max-w-md"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <DialogTitle>Delete note?</DialogTitle>
-                    <DialogDescription className="break-words [overflow-wrap:anywhere]">
-                        &ldquo;{note.title}&rdquo; will be permanently deleted.
-                        This can&apos;t be undone.
-                    </DialogDescription>
-                    <DialogFooter className="mt-2">
-                        <button
-                            type="button"
-                            onClick={() => setConfirmOpen(false)}
-                            disabled={isDeleting}
-                            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition-all"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => void handleDelete()}
-                            disabled={isDeleting}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
-                        >
-                            {isDeleting ? (
-                                <>
-                                    <Loader2 size={15} className="animate-spin" />
-                                    Deleting...
-                                </>
-                            ) : (
-                                <>
-                                    <Trash2 size={15} />
-                                    Delete
-                                </>
-                            )}
-                        </button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

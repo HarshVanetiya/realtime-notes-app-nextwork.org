@@ -46,6 +46,9 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
+    // Publicly shared notes are readable without an account; everything they
+    // expose goes through get_public_note, never the notes table.
+    !request.nextUrl.pathname.startsWith("/n/") &&
     !request.nextUrl.pathname.startsWith("/auth")
   ) {
     // no user, potentially respond by redirecting the user to the login page

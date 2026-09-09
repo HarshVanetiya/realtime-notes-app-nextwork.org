@@ -8,6 +8,7 @@ import { FileImage, X, Loader2, NotebookPen, ImagePlus } from 'lucide-react';
 import TagInput from './TagInput';
 import { collectTags } from '@/lib/note-tags';
 import { useToast } from '@/components/toast-provider';
+import { createNote, refreshIfOnline, updateNote } from '@/lib/notes-api';
 
 const Editor = dynamic(() => import('./Editor'), {
     ssr: false,
@@ -64,7 +65,10 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
     useEffect(() => {
         let cancelled = false;
         async function loadTags() {
-            const { data } = await supabase.from('notes').select('tags');
+            const { data } = await supabase
+                .from('notes')
+                .select('tags')
+                .is('deleted_at', null);
             if (cancelled || !data) return;
             setTagSuggestions(collectTags(data).map((t) => t.tag));
         }
@@ -132,7 +136,14 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                     .upload(filePath, imageFile);
 
                 if (uploadError) {
-                    throw uploadError;
+                    // Storage has no queue: bytes cannot be replayed from
+                    // IndexedDB without holding the whole file, so an image
+                    // added offline fails here rather than pretending.
+                    throw new Error(
+                        typeof navigator !== 'undefined' && !navigator.onLine
+                            ? 'Images can\u2019t be uploaded while offline. Remove the image to save the rest of the note now.'
+                            : uploadError.message,
+                    );
                 }
 
                 const { data: urlData } = supabase.storage
@@ -145,40 +156,39 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                 imageUrl = null;
             }
 
-            if (initialData?.id) {
-                const { error } = await supabase
-                    .from('notes')
-                    .update({
-                        title: title.trim(),
-                        content: content.trim() || null,
-                        image_url: imageUrl,
-                        tags,
-                    })
-                    .eq('id', initialData.id);
+            const fields = {
+                title: title.trim(),
+                content: content.trim() || null,
+                image_url: imageUrl,
+                tags,
+            };
 
-                if (error) throw error;
+            const result = initialData?.id
+                ? await updateNote(supabase, initialData.id, fields)
+                : await createNote(supabase, { user_id: userId, ...fields });
+
+            if (result.error) throw new Error(result.error);
+
+            if (result.queued) {
+                // Saved on this device, not on the server. Saying "Note
+                // created" here would be a lie the user only discovers when
+                // the note is missing from another device.
+                toast.success('Saved offline', {
+                    description: `\u201c${title.trim()}\u201d will sync when you reconnect.`,
+                });
             } else {
-                const { error } = await supabase
-                    .from('notes')
-                    .insert({
-                        user_id: userId,
-                        title: title.trim(),
-                        content: content.trim() || null,
-                        image_url: imageUrl,
-                        tags,
-                    });
-
-                if (error) throw error;
+                toast.success(
+                    initialData?.id ? 'Note updated' : 'Note created',
+                    { description: title.trim() },
+                );
             }
 
-            toast.success(
-                initialData?.id ? 'Note updated' : 'Note created',
-                { description: title.trim() },
-            );
-
             if (onSuccess) {
-                router.refresh();
+                refreshIfOnline(router);
                 onSuccess();
+            } else if (result.queued) {
+                // A client-side push still works offline; refetching does not.
+                router.push('/notes');
             } else {
                 router.replace('/notes');
                 router.refresh();
