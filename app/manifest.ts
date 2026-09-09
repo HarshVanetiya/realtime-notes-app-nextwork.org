@@ -7,8 +7,8 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'Slate — realtime notes',
-        short_name: 'Slate',
+        name: 'Prism — notes at the speed of thought',
+        short_name: 'Prism',
         description:
             'Notes that sync live across your devices. Write, tag, search and share.',
         start_url: '/notes',

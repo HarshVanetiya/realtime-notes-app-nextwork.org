@@ -46,7 +46,7 @@ export function LoginForm({
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to your Realtime Notes</p>
+          <p className="text-sm text-muted-foreground mt-1">Welcome back to Prism</p>
         </div>
       </div>
 
@@ -106,7 +106,7 @@ export function LoginForm({
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-semibold transition-all"
+            className="btn-spectrum sheen h-11 w-full rounded-xl font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25"
           >
             {isLoading ? (
               <><Loader2 size={16} className="animate-spin mr-2" />Signing in...</>

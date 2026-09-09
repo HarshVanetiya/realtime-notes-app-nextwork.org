@@ -101,7 +101,7 @@ export function ForgotPasswordForm({
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-semibold transition-all"
+              className="btn-spectrum sheen h-11 w-full rounded-xl font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25"
             >
               {isLoading ? (
                 <><Loader2 size={16} className="animate-spin mr-2" />Sending...</>

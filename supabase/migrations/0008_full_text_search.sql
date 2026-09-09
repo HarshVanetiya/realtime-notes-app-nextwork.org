@@ -159,7 +159,22 @@ as $fn$
            or n.search_vector @@ websearch_to_tsquery('english', btrim(p_query)))
 $fn$;
 
-revoke all on function public.matching_notes(text, text, boolean) from public;
+-- ---------------------------------------------------------------------------
+-- Why every revoke below names `anon` as well as `public`
+--
+-- Supabase ships `alter default privileges in schema public grant all on
+-- functions to anon, authenticated, service_role`. That gives each new function
+-- an EXPLICIT grant to the anon role, which `revoke ... from public` does not
+-- remove — PUBLIC and anon are different grantees. Revoking only from PUBLIC
+-- left anon able to call these, which verify.sql caught on a real project.
+--
+-- It was not a data leak: these are SECURITY INVOKER, so RLS applies and
+-- auth.uid() is null for anon, which matches no rows. It was a way for an
+-- unauthenticated caller to spend the database's CPU on full-text queries,
+-- which is reason enough to close it.
+-- ---------------------------------------------------------------------------
+
+revoke all on function public.matching_notes(text, text, boolean) from public, anon;
 grant execute on function public.matching_notes(text, text, boolean) to authenticated;
 
 -- One branch per sort order, spelled out.
@@ -219,7 +234,7 @@ begin
 end
 $fn$;
 
-revoke all on function public.search_notes(text, text, boolean, text, integer, integer) from public;
+revoke all on function public.search_notes(text, text, boolean, text, integer, integer) from public, anon;
 grant execute on function public.search_notes(text, text, boolean, text, integer, integer) to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -249,7 +264,7 @@ as $fn$
     select count(*) from public.matching_notes(p_query, p_tag, p_favorites)
 $fn$;
 
-revoke all on function public.count_notes(text, text, boolean) from public;
+revoke all on function public.count_notes(text, text, boolean) from public, anon;
 grant execute on function public.count_notes(text, text, boolean) to authenticated;
 
 -- The tag list for the filter chips. Same reasoning: the client used to derive
@@ -269,7 +284,7 @@ as $fn$
     order by count(*) desc, t asc
 $fn$;
 
-revoke all on function public.note_tags() from public;
+revoke all on function public.note_tags() from public, anon;
 grant execute on function public.note_tags() to authenticated;
 
 -- ---------------------------------------------------------------------------

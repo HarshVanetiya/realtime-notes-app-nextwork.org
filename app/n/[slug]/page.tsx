@@ -50,10 +50,10 @@ export async function generateMetadata({
 
     return {
         title: note.title,
-        description: excerpt || 'A note shared from Slate.',
+        description: excerpt || 'A note shared from Prism.',
         openGraph: {
             title: note.title,
-            description: excerpt || 'A note shared from Slate.',
+            description: excerpt || 'A note shared from Prism.',
             type: 'article',
             publishedTime: note.created_at,
             images: note.image_url ? [{ url: note.image_url }] : undefined,
@@ -61,7 +61,7 @@ export async function generateMetadata({
         twitter: {
             card: note.image_url ? 'summary_large_image' : 'summary',
             title: note.title,
-            description: excerpt || 'A note shared from Slate.',
+            description: excerpt || 'A note shared from Prism.',
         },
         // A shared link is meant for whoever holds it, not for search engines.
         robots: { index: false, follow: false },
@@ -125,7 +125,7 @@ async function PublicNoteContent({
             <footer className="mt-16 border-t border-border/60 pt-6 text-sm text-muted-foreground">
                 Shared from{' '}
                 <Link href="/" className="font-medium text-primary-text hover:underline">
-                    Slate
+                    Prism
                 </Link>
                 . Only this note is public.
             </footer>

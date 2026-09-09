@@ -15,18 +15,18 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   // A template rather than a fixed string, so every route contributes its own
   // title and a shared link shows what it actually points at.
-  title: { default: "Slate — realtime notes", template: "%s · Slate" },
+  title: { default: "Prism — notes at the speed of thought", template: "%s · Prism" },
   description: DESCRIPTION,
-  applicationName: "Slate",
+  applicationName: "Prism",
   openGraph: {
     type: "website",
-    siteName: "Slate",
-    title: "Slate — realtime notes",
+    siteName: "Prism",
+    title: "Prism — notes at the speed of thought",
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Slate — realtime notes",
+    title: "Prism — notes at the speed of thought",
     description: DESCRIPTION,
   },
 };

@@ -20,10 +20,9 @@ import {
     Moon,
 } from 'lucide-react';
 
-import Image from 'next/image';
 import CreateNoteModal from './CreateNoteModal';
 import { useToast } from '@/components/toast-provider';
-import notesIcon from '../public/notes-icon.svg';
+import PrismMark from '@/components/PrismMark';
 
 const navItems = [
     { href: '/notes', label: 'My Notes', icon: BookOpen, exact: true },
@@ -212,7 +211,7 @@ export default function AppSidebar() {
                 const itemContent = (
                     <>
                         {active && (
-                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
+                            <span className="bg-spectrum absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full" />
                         )}
                         <Icon
                             size={17}
@@ -316,26 +315,18 @@ export default function AppSidebar() {
                         aria-expanded={!collapsed}
                         className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent transition-transform hover:scale-105"
                     >
-                        <Image
-                            src={notesIcon}
-                            alt="Slate Logo"
-                            className="w-full h-full object-contain"
-                        />
+                        <PrismMark size={30} idSuffix="rail" />
                     </button>
                 ) : (
                     <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent">
-                        <Image
-                            src={notesIcon}
-                            alt="Slate Logo"
-                            className="w-full h-full object-contain"
-                        />
+                        <PrismMark size={30} idSuffix="rail-static" />
                     </div>
                 )}
                 <div
                     className={`transition-all duration-300 flex flex-col justify-center min-w-0 flex-1 ${collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 w-auto'}`}
                 >
-                    <h1 className="font-black text-2xl text-foreground tracking-tighter truncate lowercase flex items-baseline">
-                        slate<span className="text-primary-text font-black">.</span>
+                    <h1 className="flex items-baseline truncate text-2xl font-black tracking-tighter text-foreground">
+                        Prism
                     </h1>
                 </div>
                 {options?.onClose && (

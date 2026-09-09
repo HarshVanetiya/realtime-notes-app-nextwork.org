@@ -63,7 +63,7 @@ export default function FirstRunPanel({
                     <Sparkles size={26} className="text-primary-text" />
                 </div>
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                    Welcome to Slate
+                    Welcome to Prism
                 </h2>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
                     A place for notes that sync live across your devices. Start
@@ -75,7 +75,7 @@ export default function FirstRunPanel({
                     <button
                         onClick={() => void addSample()}
                         disabled={seeding}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity duration-fast ease-standard hover:opacity-90 disabled:opacity-60 sm:w-auto"
+                        className="btn-spectrum sheen inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25 disabled:opacity-60 sm:w-auto"
                     >
                         {seeding && <Loader2 size={15} className="animate-spin" />}
                         Add a sample note

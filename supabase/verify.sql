@@ -32,10 +32,15 @@ with checks as (
     select 'note-images bucket exists',
            exists (select 1 from storage.buckets where id = 'note-images')
     union all
+    -- Matches the bucket name anywhere in the policy, including its name:
+    -- a project whose bucket was created through the Supabase dashboard rather
+    -- than by 0004 has policies with different wording, and the earlier version
+    -- of this check only looked at the USING / WITH CHECK expressions.
     select 'storage policies for note-images',
            (select count(*) from pg_policies
             where schemaname = 'storage' and tablename = 'objects'
-              and coalesce(qual, '') || coalesce(with_check, '') like '%note-images%') >= 4
+              and coalesce(qual, '') || coalesce(with_check, '') || policyname
+                  like '%note-images%') >= 4
     union all
     select 'updated_at trigger installed',
            exists (select 1 from pg_trigger
@@ -78,8 +83,18 @@ with checks as (
     select 'anon can call get_public_note (0007)',
            has_function_privilege('anon', 'public.get_public_note(text)', 'EXECUTE')
     union all
-    select 'anon CANNOT read the notes table directly (0007)',
-           not has_table_privilege('anon', 'public.notes', 'SELECT')
+    -- This used to assert `not has_table_privilege('anon','public.notes','SELECT')`
+    -- and failed on every real Supabase project, for a benign reason: Supabase
+    -- grants SELECT on public tables to anon BY DESIGN and relies on RLS to
+    -- decide which rows come back. The table grant is how PostgREST reaches the
+    -- table at all; the policies are the security boundary. So the meaningful
+    -- assertion is that no policy on `notes` is open to an unauthenticated
+    -- caller — which is what this checks. A behavioural test is at the bottom
+    -- of this file.
+    select 'no notes policy is open to anon or public (0007)',
+           not exists (select 1 from pg_policies
+                       where schemaname = 'public' and tablename = 'notes'
+                         and (roles && array['anon','public']::name[]))
     union all
     select 'no anon RLS policy on notes (0007)',
            not exists (select 1 from pg_policies
@@ -140,3 +155,29 @@ with checks as (
 select case when ok then 'PASS' else 'FAIL' end as result, check_name
 from checks
 order by ok, check_name;
+
+
+-- ---------------------------------------------------------------------------
+-- Behavioural checks — run these separately, they change the session role.
+--
+-- 1. Prove anon really cannot read notes, rather than inferring it from grants
+--    and policy text:
+--
+--       set local role anon;
+--       select count(*) from public.notes;   -- must be 0
+--       reset role;
+--
+-- 2. If "storage policies for note-images" fails, look at what your project
+--    actually has before changing anything — a bucket created through the
+--    dashboard has policies with different names and wording, and they may be
+--    perfectly correct:
+--
+--       select policyname, cmd, roles, qual, with_check
+--       from pg_policies
+--       where schemaname = 'storage' and tablename = 'objects';
+--
+--    What matters is that INSERT/UPDATE/DELETE on the note-images bucket are
+--    confined to the caller's own folder — the shape 0004 writes as
+--    `(storage.foldername(name))[1] = auth.uid()::text`. If yours does that
+--    under any name, you are fine. If it does not, run 0004.
+-- ---------------------------------------------------------------------------

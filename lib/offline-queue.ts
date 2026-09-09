@@ -22,6 +22,11 @@
  * flush harmless.
  */
 
+// Also left at `slate-` after the rename, and here it matters far more
+// than the onboarding flag: this database holds writes the user made
+// offline that have not reached the server yet. Pointing the app at a new
+// database name would strand them permanently — a rename is never worth
+// losing someone's unsynced notes.
 const DB_NAME = 'slate-offline';
 const DB_VERSION = 1;
 const STORE = 'ops';

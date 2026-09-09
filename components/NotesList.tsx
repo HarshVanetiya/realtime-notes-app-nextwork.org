@@ -513,7 +513,7 @@ export default function NotesList({
                     </p>
                     <button
                         onClick={() => refreshIfOnline(router)}
-                        className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+                        className="btn-spectrum rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25"
                     >
                         Try again
                     </button>
@@ -535,7 +535,7 @@ export default function NotesList({
                     </p>
                     <button
                         onClick={() => refreshIfOnline(router)}
-                        className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+                        className="btn-spectrum rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25"
                     >
                         Try again
                     </button>
@@ -570,7 +570,7 @@ export default function NotesList({
                         remembering.
                     </p>
                     <CreateNoteModal>
-                        <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
+                        <button className="btn-spectrum sheen flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25">
                             Create your first note
                         </button>
                     </CreateNoteModal>
@@ -790,7 +790,7 @@ export default function NotesList({
                     <CreateNoteModal>
                         <button
                             aria-label="Create note"
-                            className="group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.15] hover:shadow-primary/50 active:scale-95"
+                            className="btn-spectrum group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-[hsl(var(--spectrum-violet))]/40 hover:scale-[1.08] hover:shadow-[hsl(var(--spectrum-violet))]/60"
                         >
                             {/* Inner glow on hover */}
                             <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 blur-sm transition-opacity duration-300 group-hover:opacity-100"></div>

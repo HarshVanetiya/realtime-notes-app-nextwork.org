@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 
     const filename = id
         ? `${slugify(notes[0].title)}.md`
-        : `slate-notes-${new Date().toISOString().slice(0, 10)}.md`;
+        : `prism-notes-${new Date().toISOString().slice(0, 10)}.md`;
 
     return new Response(markdown, {
         headers: {

@@ -131,8 +131,9 @@ export default function NoteCard({
             style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
             className={`
                 group relative flex flex-col rounded-2xl border border-border/60 bg-card/70
-                hover:border-primary/30 hover:bg-foreground/[0.03] hover:shadow-lg
-                motion-safe:hover:-translate-y-0.5
+                hover:border-[hsl(var(--spectrum-violet))]/40 hover:bg-foreground/[0.03]
+                hover:shadow-[0_18px_40px_-14px_hsl(var(--spectrum-violet)/0.45)]
+                motion-safe:hover:-translate-y-1
                 overflow-hidden animate-fade-in
                 transition-[transform,box-shadow,border-color,background-color]
                 duration-base ease-standard
@@ -140,6 +141,18 @@ export default function NoteCard({
                 ${isDeleting ? 'opacity-50 scale-95 pointer-events-none' : ''}
             `}
         >
+            {/* The card lights up from its own edge on hover rather than just
+                changing border colour — a flat 1px state change is what made
+                the grid feel inert. Opacity only, so it composites. */}
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-base ease-standard group-hover:opacity-100"
+                style={{
+                    background:
+                        'radial-gradient(120% 80% at 50% 0%, hsl(var(--spectrum-violet) / 0.14), transparent 60%)',
+                }}
+            />
+
             {/* Favorite indicator stripe */}
             {note.is_favorite && (
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-400" />

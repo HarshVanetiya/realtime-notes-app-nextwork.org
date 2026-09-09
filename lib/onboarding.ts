@@ -6,6 +6,11 @@
  * fixture would teach the wrong thing the moment someone tried to change it.
  */
 
+// Deliberately still `slate:` after the rename to Prism. This key is an
+// internal identifier, not a label — renaming it would make every existing
+// user's browser forget they had been onboarded and show them the
+// first-run panel again. Cosmetic tidiness is not worth resetting state
+// that lives on someone else's machine.
 const DISMISSED_KEY = 'slate:onboarding-dismissed';
 
 export function hasDismissedOnboarding(): boolean {
@@ -34,7 +39,7 @@ const t = (text: string, styles: Record<string, boolean> = {}) => ({
 
 /** Demonstrates the block types people are least likely to discover alone. */
 export const SAMPLE_NOTE = {
-    title: 'Welcome to Slate',
+    title: 'Welcome to Prism',
     tags: ['welcome', 'getting-started'],
     content: JSON.stringify([
         {
