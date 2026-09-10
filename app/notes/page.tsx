@@ -34,22 +34,28 @@ async function NotesContent({ searchParams }: { searchParams: Search }) {
     // rather than the URL, so the server renders the unsearched first page and
     // the client takes over the moment anyone types. Putting it in the URL
     // would mean a server round trip per keystroke.
-    const rpcArgs = {
+    // Only the parameters both functions declare. `p_sort` is attached below,
+    // to the one call that takes it: count_notes has no sort parameter, and
+    // PostgREST matches on the exact argument set, so passing it there made the
+    // call resolve to nothing. See lib/notes-query.ts for the full story.
+    const filterArgs = {
         p_query: null,
         p_tag: tagParam,
         p_favorites: favorites,
-        p_sort: sort,
     };
 
     const [pageResult, countResult, tagsResult] = await Promise.all([
         supabase.rpc('search_notes', {
-            ...rpcArgs,
+            ...filterArgs,
+            p_sort: sort,
             p_limit: PAGE_SIZE,
             p_offset: 0,
         }),
-        supabase.rpc('count_notes', rpcArgs),
+        supabase.rpc('count_notes', filterArgs),
         supabase.rpc('note_tags'),
     ]);
+
+    const notes = (pageResult.data ?? []) as Note[];
 
     const loadError =
         pageResult.error?.message ??
@@ -60,8 +66,15 @@ async function NotesContent({ searchParams }: { searchParams: Search }) {
     return (
         <main className="flex-1 p-6 overflow-auto scrollbar-thin">
             <NotesList
-                initialNotes={(pageResult.data ?? []) as Note[]}
-                initialTotal={Number(countResult.data ?? 0)}
+                initialNotes={notes}
+                /* Falling back to what actually loaded, not 0. A failed count
+                   used to zero the total, and `hasMore` was derived from it —
+                   so one broken RPC silently capped every account at its first
+                   page. Paging no longer depends on this at all, but a total
+                   that contradicts the rows on screen is still a lie. */
+                initialTotal={
+                    countResult.error ? notes.length : Number(countResult.data ?? 0)
+                }
                 initialTags={tagsResult.data ?? []}
                 userId={userId}
                 loadError={loadError}

@@ -25,12 +25,25 @@ export type NotesQuery = {
 
 export type TagCount = { tag: string; count: number };
 
-function args(q: NotesQuery) {
+/**
+ * The three parameters BOTH functions take. Nothing else belongs here.
+ *
+ * There used to be one `args()` that also carried `p_sort`, shared by the page
+ * query and the count. `count_notes` does not declare `p_sort` — a count has no
+ * order — and PostgREST resolves overloads by the EXACT set of named arguments,
+ * so the extra key made the call resolve to nothing at all:
+ *
+ *     Could not find the function public.count_notes(...) in the schema cache
+ *
+ * Splitting it means the sort can only ever be attached at the one call site
+ * that has somewhere to put it. `scripts/check-rpc-signatures.mjs` now proves
+ * that against the SQL on every run.
+ */
+function filterArgs(q: NotesQuery) {
     return {
         p_query: q.query.trim() || null,
         p_tag: q.tag,
         p_favorites: q.favorites,
-        p_sort: q.sort,
     };
 }
 
@@ -41,7 +54,8 @@ export async function fetchNotesPage(
     signal?: AbortSignal,
 ): Promise<Note[]> {
     let req = supabase.rpc('search_notes', {
-        ...args(q),
+        ...filterArgs(q),
+        p_sort: q.sort,
         p_limit: PAGE_SIZE,
         p_offset: page * PAGE_SIZE,
     });
@@ -63,7 +77,7 @@ export async function fetchNotesCount(
     q: NotesQuery,
     signal?: AbortSignal,
 ): Promise<number> {
-    let req = supabase.rpc('count_notes', args(q));
+    let req = supabase.rpc('count_notes', filterArgs(q));
     if (signal) req = req.abortSignal(signal);
 
     const { data, error } = await req;

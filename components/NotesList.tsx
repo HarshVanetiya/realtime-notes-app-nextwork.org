@@ -92,6 +92,7 @@ export default function NotesList({
         setTotal(initialTotal);
         setTagCounts(initialTags);
         setPage(0);
+        setReachedEnd(initialNotes.length < PAGE_SIZE);
         setQuery('');
         servedCriteria.current = JSON.stringify({
             query: '',
@@ -150,6 +151,17 @@ export default function NotesList({
     // a tsvector rather than against whatever happened to be downloaded.
     const [total, setTotal] = useState(initialTotal);
     const [page, setPage] = useState(0);
+    // Whether the server has run out of rows, decided by what the last page
+    // actually returned — NOT by the count.
+    //
+    // `hasMore` used to be `notes.length < total`, which made paging depend on
+    // a second, entirely separate RPC. When that RPC broke, `total` fell back
+    // to 0 and every account was silently capped at its first 24 notes, with
+    // nothing on screen to say so. A short page is the server telling us
+    // directly that there is no more; the count is only ever a label.
+    const [reachedEnd, setReachedEnd] = useState(
+        initialNotes.length < PAGE_SIZE,
+    );
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [queryError, setQueryError] = useState<string | null>(null);
@@ -207,6 +219,7 @@ export default function NotesList({
                         setNotes(rows);
                         setTotal(count);
                         setPage(0);
+                        setReachedEnd(rows.length < PAGE_SIZE);
                     })
                     .catch((e) => {
                         if (controller.signal.aborted) return;
@@ -250,7 +263,7 @@ export default function NotesList({
     const filtersRef = useRef(criteria);
     filtersRef.current = criteria;
 
-    const hasMore = notes.length < total;
+    const hasMore = !reachedEnd;
 
     // Scrolled into view -> fetch the next page from the server rather than
     // reveal more of an array that already held everything.
@@ -277,8 +290,12 @@ export default function NotesList({
                             ];
                         });
                         setPage(next);
+                        setReachedEnd(rows.length < PAGE_SIZE);
                     })
                     .catch((e) => {
+                        // Stop asking. Without this the sentinel is still in
+                        // view, so a failing request retries on every scroll.
+                        setReachedEnd(true);
                         setQueryError(
                             (e as { message?: string })?.message ??
                                 'Could not load more notes.',
@@ -692,6 +709,13 @@ export default function NotesList({
                         That&apos;s all {total} notes.
                     </p>
                 )}
+                {!hasMore && total <= PAGE_SIZE && notes.length > PAGE_SIZE && (
+                    /* The count disagrees with what is on screen, which means
+                       it failed. Say what is true rather than a stale number. */
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                        That&apos;s all of them.
+                    </p>
+                )}
                 <div className="pb-32" />
             </>
         );
@@ -726,6 +750,35 @@ export default function NotesList({
                       }${isFavoritesView ? ' in favorites' : ''}`
                     : ''}
             </p>
+
+            {/* The server render partly failed but some notes did load. The
+                full-page error panel below only renders when NOTHING loaded, so
+                without this the failure is invisible — which is exactly how a
+                broken count_notes RPC sat in production silently capping every
+                list at one page. */}
+            {loadError && notesWithPending.length > 0 && (
+                <div
+                    role="status"
+                    className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
+                >
+                    <AlertCircle
+                        size={16}
+                        className="flex-shrink-0 text-amber-500"
+                    />
+                    <p className="min-w-0 flex-1 text-foreground">
+                        Some of this page didn&apos;t load.{' '}
+                        <span className="break-words text-muted-foreground [overflow-wrap:anywhere]">
+                            {loadError}
+                        </span>
+                    </p>
+                    <button
+                        onClick={() => refreshIfOnline(router)}
+                        className="inline-flex flex-shrink-0 items-center gap-2 rounded-lg border border-amber-500/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-amber-500/10"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
 
             {(showBanner || queuedOps.length > 0) && (
                 <SyncStatusBanner
