@@ -364,7 +364,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                         disabled={isSubmitting || !title.trim()}
                         className="
                             flex items-center justify-center gap-2 px-6 py-3 rounded-xl
-                            btn-spectrum text-sm font-semibold
+                            btn-accent text-sm font-semibold
                             hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100
                             transition-all duration-150
                         "

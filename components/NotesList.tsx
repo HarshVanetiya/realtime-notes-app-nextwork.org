@@ -530,7 +530,7 @@ export default function NotesList({
                     </p>
                     <button
                         onClick={() => refreshIfOnline(router)}
-                        className="btn-spectrum rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25"
+                        className="btn-accent rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg"
                     >
                         Try again
                     </button>
@@ -552,7 +552,7 @@ export default function NotesList({
                     </p>
                     <button
                         onClick={() => refreshIfOnline(router)}
-                        className="btn-spectrum rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25"
+                        className="btn-accent rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg"
                     >
                         Try again
                     </button>
@@ -587,7 +587,7 @@ export default function NotesList({
                         remembering.
                     </p>
                     <CreateNoteModal>
-                        <button className="btn-spectrum sheen flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25">
+                        <button className="btn-accent flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg">
                             Create your first note
                         </button>
                     </CreateNoteModal>
@@ -843,7 +843,7 @@ export default function NotesList({
                     <CreateNoteModal>
                         <button
                             aria-label="Create note"
-                            className="btn-spectrum group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-[hsl(var(--spectrum-violet))]/40 hover:scale-[1.08] hover:shadow-[hsl(var(--spectrum-violet))]/60"
+                            className="btn-accent group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg hover:scale-[1.08] hover:"
                         >
                             {/* Inner glow on hover */}
                             <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 blur-sm transition-opacity duration-300 group-hover:opacity-100"></div>

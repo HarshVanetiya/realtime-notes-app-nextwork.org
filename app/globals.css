@@ -6,47 +6,75 @@
 
 @layer base {
     :root {
-        /* One indigo family across both themes. Surface and text steps are
-           separate because no single lightness clears AA for both a filled
-           button and text on the page background — every value below is
-           measured, not eyeballed. */
-        --background: 216 40% 96%;
-        --foreground: 222 47% 11%;
+        /* MATTE BASE — no gloss, no gradient anywhere in the product.
+           A warm off-white in light, a VS Code-ish desaturated gray in dark.
+           Colour arrives only where the user put it.
+
+           These two --background values are duplicated in lib/color.ts, which
+           needs them to derive readable accent steps. That duplication is
+           checked by scripts/check-accent-contrast.mjs — a derivation measured
+           against a background that is not on screen produces confidently
+           wrong contrast numbers. */
+        --background: 30 8% 97%;
+        --foreground: 220 12% 14%;
 
         --card: 0 0% 100%;
-        --card-foreground: 222 47% 11%;
+        --card-foreground: 220 12% 14%;
 
         --popover: 0 0% 100%;
-        --popover-foreground: 222 47% 11%;
+        --popover-foreground: 220 12% 14%;
 
-        --primary: 243 75% 53%;            /* white on this: 8.02:1 */
+        /* THE USER'S ACCENT.
+           These three are overwritten on <html> by the pre-paint script in
+           app/layout.tsx before the first frame. The values here are the
+           default for a fresh account and for server-rendered HTML — a calm
+           desaturated blue, chosen so the product is not purple out of the box.
+
+           --primary rather than a new --brand token on purpose: every existing
+           `bg-primary` / `text-primary-text` in the app then follows the
+           accent with no component churn. shadcn's own --accent below is a
+           muted hover surface and is left alone. */
+        --primary: 212 72% 48%;        /* white on this: 4.61:1 — measured, not eyeballed */
         --primary-foreground: 0 0% 100%;
-        --primary-text: 243 75% 45%;       /* on bg 9.08:1, on card 10.01:1 */
+        --primary-text: 212 72% 38%;   /* on --background: 6.26:1 */
 
-        --secondary: 214 32% 91%;
-        --secondary-foreground: 222 47% 11%;
+        --secondary: 30 6% 92%;
+        --secondary-foreground: 220 12% 14%;
 
-        --muted: 214 32% 91%;
-        --muted-foreground: 215 16% 42%;
+        --muted: 30 6% 92%;
+        --muted-foreground: 220 6% 40%;
 
-        --accent: 214 32% 91%;
-        --accent-foreground: 222 47% 11%;
+        /* shadcn's hover-surface token. NOT the brand accent. */
+        --accent: 30 6% 92%;
+        --accent-foreground: 220 12% 14%;
 
         --destructive: 0 72% 45%;
         --destructive-foreground: 0 0% 100%;
 
         --success: 152 60% 32%;
 
-        --border: 214 32% 86%;
-        --input: 214 32% 86%;
-        --ring: 243 75% 53%;
+        --border: 30 6% 87%;
+        --input: 30 6% 87%;
+        --ring: 212 72% 48%;
 
         --radius: 1rem;
 
-        --sidebar-bg: 216 40% 95%;
-        --sidebar-border: 214 32% 86%;
-        --glass-bg: 216 40% 96% / 0.5;
-        --glass-border: 214 32% 86% / 0.5;
+        --sidebar-bg: 30 7% 95%;
+        --sidebar-border: 30 6% 87%;
+
+        /* SPATIAL TILES.
+           A tile reads as floating because of four things layered together: a
+           low-alpha fill, a hairline border, a soft drop shadow, and a 1px
+           highlight along its top edge catching the imaginary light. Not a
+           blur — a blur costs frames and does not actually read as depth. */
+        --tile-bg: 0 0% 100% / 0.72;
+        --tile-border: 220 12% 14% / 0.10;
+        --tile-highlight: 0 0% 100% / 0.9;
+        --tile-shadow: 0 1px 2px hsl(220 12% 14% / 0.05),
+                       0 8px 24px -8px hsl(220 12% 14% / 0.12);
+        --tile-shadow-lifted: 0 2px 4px hsl(220 12% 14% / 0.06),
+                              0 18px 40px -12px hsl(220 12% 14% / 0.22);
+        --glare: 0 0% 100% / 0.55;
 
         /* Motion. One scale, so nothing in the UI moves at an arbitrary speed.
            Durations stay short enough to feel instant; the standard easing is
@@ -61,48 +89,55 @@
         --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
 
         /* Elevation as a scale rather than ad-hoc shadow utilities. */
-        --shadow-sm: 0 1px 2px hsl(222 47% 11% / 0.06);
-        --shadow-md: 0 2px 8px hsl(222 47% 11% / 0.08), 0 1px 2px hsl(222 47% 11% / 0.04);
-        --shadow-lg: 0 8px 24px hsl(222 47% 11% / 0.10), 0 2px 6px hsl(222 47% 11% / 0.06);
-        --shadow-xl: 0 16px 48px hsl(222 47% 11% / 0.14), 0 4px 12px hsl(222 47% 11% / 0.08);
+        --shadow-sm: 0 1px 2px hsl(220 12% 14% / 0.06);
+        --shadow-md: 0 2px 8px hsl(220 12% 14% / 0.08), 0 1px 2px hsl(220 12% 14% / 0.04);
+        --shadow-lg: 0 8px 24px hsl(220 12% 14% / 0.10), 0 2px 6px hsl(220 12% 14% / 0.06);
+        --shadow-xl: 0 16px 48px hsl(220 12% 14% / 0.14), 0 4px 12px hsl(220 12% 14% / 0.08);
     }
 
     .dark {
-        --background: 224 71% 4%;
-        --foreground: 210 40% 98%;
+        --background: 220 6% 12%;
+        --foreground: 220 12% 92%;
 
-        --card: 222 47% 11%;
-        --card-foreground: 210 40% 98%;
+        --card: 220 6% 15%;
+        --card-foreground: 220 12% 92%;
 
-        --popover: 222 47% 11%;
-        --popover-foreground: 210 40% 98%;
+        --popover: 220 6% 17%;
+        --popover-foreground: 220 12% 92%;
 
-        --primary: 243 75% 68%;            /* dark fg on this: 4.85:1 */
-        --primary-foreground: 243 60% 10%;
-        --primary-text: 243 75% 76%;       /* on bg 7.51:1, on card 6.66:1 */
+        --primary: 212 72% 58%;        /* dark fg on this: 5.61:1 */
+        --primary-foreground: 220 30% 8%;
+        --primary-text: 212 72% 68%;   /* on --background: 6.81:1 */
 
-        --secondary: 217.2 32.6% 17.5%;
-        --secondary-foreground: 210 40% 98%;
+        --secondary: 220 6% 20%;
+        --secondary-foreground: 220 12% 92%;
 
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 68%;
+        --muted: 220 6% 20%;
+        --muted-foreground: 220 8% 65%;
 
-        --accent: 217.2 32.6% 17.5%;
-        --accent-foreground: 210 40% 98%;
+        --accent: 220 6% 20%;
+        --accent-foreground: 220 12% 92%;
 
         --destructive: 0 72% 58%;
-        --destructive-foreground: 224 71% 4%;
+        --destructive-foreground: 220 30% 8%;
 
         --success: 152 55% 55%;
 
-        --border: 217.2 32.6% 17.5%;
-        --input: 217.2 32.6% 17.5%;
-        --ring: 243 75% 68%;
+        --border: 220 6% 24%;
+        --input: 220 6% 24%;
+        --ring: 212 72% 58%;
 
-        --sidebar-bg: 224 71% 4%;
-        --sidebar-border: 217.2 32.6% 17.5%;
-        --glass-bg: 222 47% 11% / 0.4;
-        --glass-border: 217.2 32.6% 17.5% / 0.5;
+        --sidebar-bg: 220 6% 10%;
+        --sidebar-border: 220 6% 20%;
+
+        --tile-bg: 220 8% 100% / 0.045;
+        --tile-border: 0 0% 100% / 0.09;
+        --tile-highlight: 0 0% 100% / 0.10;
+        --tile-shadow: 0 1px 2px hsl(0 0% 0% / 0.30),
+                       0 8px 24px -8px hsl(0 0% 0% / 0.45);
+        --tile-shadow-lifted: 0 2px 4px hsl(0 0% 0% / 0.35),
+                              0 18px 40px -12px hsl(0 0% 0% / 0.60);
+        --glare: 0 0% 100% / 0.10;
 
         --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.30);
         --shadow-md: 0 2px 8px hsl(0 0% 0% / 0.36), 0 1px 2px hsl(0 0% 0% / 0.24);
@@ -482,29 +517,27 @@
         background-size: 180% 100%;
     }
 
-    /* The product's primary action. A single flat indigo read as inert next
-       to the landing page; this is the same spectrum, so the app and its front
-       door look like one product. */
-    .btn-spectrum {
-        background-image: linear-gradient(
-            120deg,
-            hsl(var(--spectrum-blue)),
-            hsl(var(--spectrum-violet)) 45%,
-            hsl(var(--spectrum-pink))
-        );
-        background-size: 180% 100%;
-        background-position: 0% 50%;
-        color: #fff;
+    /* The product's primary action: a FLAT fill of the user's accent.
+       It was a spectrum gradient. Gradients are exactly what "no gloss, no
+       gradient, only the accent I chose" rules out, and a gradient cannot
+       honour one user-supplied colour anyway. Hover lifts and brightens
+       slightly; press settles. Transform and opacity only. */
+    .btn-accent {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
         transition:
-            background-position var(--duration-slow) var(--ease-standard),
+            filter var(--duration-fast) var(--ease-standard),
             transform var(--duration-fast) var(--ease-spring),
             box-shadow var(--duration-base) var(--ease-standard);
     }
-    .btn-spectrum:hover {
-        background-position: 100% 50%;
+    .btn-accent:hover {
+        /* A one-off static filter on a small element, never animated frame by
+           frame — the cheap end of the effect that cost this project 77% of
+           its frames when it was applied to large, moving surfaces. */
+        filter: brightness(1.08);
         transform: translateY(-1px);
     }
-    .btn-spectrum:active {
+    .btn-accent:active {
         transform: translateY(0) scale(0.98);
     }
 
@@ -677,6 +710,115 @@
         animation: none !important;
     }
     .tilt {
+        transform: none !important;
+    }
+}
+
+/* ============================================================================
+   SPATIAL TILES
+   ============================================================================
+   Panels that read as floating a few millimetres above a matte surface, the
+   way an AR headset renders them.
+
+   Depth comes from FOUR cheap things layered — a low-alpha fill, a hairline
+   border, a soft drop shadow, and a 1px highlight along the top edge catching
+   the imaginary light. Not from `backdrop-filter`: a blur costs a re-read of
+   everything behind the element on every composited frame, and against a flat
+   matte background there is nothing behind it worth blurring anyway. That was
+   measured twice in this project, both times at a cost of most of the frames.
+   ========================================================================= */
+
+@layer utilities {
+    .tile {
+        position: relative;
+        background-color: hsl(var(--tile-bg));
+        border: 1px solid hsl(var(--tile-border));
+        border-radius: 1.25rem;
+        box-shadow: var(--tile-shadow);
+        transition:
+            transform var(--duration-base) var(--ease-standard),
+            box-shadow var(--duration-base) var(--ease-standard),
+            border-color var(--duration-base) var(--ease-standard);
+    }
+
+    /* The lit top edge. An inset box-shadow rather than a pseudo-element, so it
+       follows the border radius exactly and costs nothing to composite. */
+    .tile::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        box-shadow: inset 0 1px 0 0 hsl(var(--tile-highlight));
+    }
+
+    .tile-interactive:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--tile-shadow-lifted);
+        border-color: hsl(var(--primary) / 0.35);
+    }
+
+    /* ---- The glare -----------------------------------------------------
+       A specular highlight that tracks the pointer. --mx/--my are written by
+       a rAF-throttled pointermove; everything else is static, so a pointer
+       move repaints one gradient inside an already-composited layer rather
+       than touching layout.
+
+       Sits under the content (z-index 0 with content at 1) so it lights the
+       tile rather than washing out the text. */
+    .glare {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity var(--duration-base) var(--ease-standard);
+        background: radial-gradient(
+            circle 22rem at var(--mx, 50%) var(--my, 0%),
+            hsl(var(--glare)),
+            transparent 45%
+        );
+    }
+    .group:hover > .glare {
+        opacity: 1;
+    }
+
+    /* ---- The press ripple ----------------------------------------------
+       One span, positioned at the exact point pressed, scaled up and faded
+       out. Removed on animationend by the component — leaving them to
+       accumulate would grow the DOM for the life of the session. */
+    .ripple {
+        position: absolute;
+        border-radius: 9999px;
+        pointer-events: none;
+        transform: scale(0);
+        background: radial-gradient(
+            circle,
+            hsl(var(--primary) / 0.35),
+            hsl(var(--primary) / 0.12) 45%,
+            transparent 70%
+        );
+        animation: ripple-out 620ms var(--ease-standard) forwards;
+    }
+
+    .pressable:active {
+        transform: scale(0.985);
+    }
+}
+
+@keyframes ripple-out {
+    from { transform: scale(0); opacity: 0.9; }
+    to   { transform: scale(1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* Both of these are pure decoration. Off entirely rather than sped up:
+       a 0.01ms ripple is a flash, which is worse than none. */
+    .glare,
+    .ripple {
+        display: none !important;
+    }
+    .tile-interactive:hover {
         transform: none !important;
     }
 }

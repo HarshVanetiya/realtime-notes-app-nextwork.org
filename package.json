@@ -4,8 +4,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . && node scripts/check-rpc-signatures.mjs",
-    "check:rpc": "node scripts/check-rpc-signatures.mjs"
+    "lint": "eslint . && node scripts/check-rpc-signatures.mjs && node scripts/check-accent-contrast.mjs",
+    "check:rpc": "node scripts/check-rpc-signatures.mjs",
+    "check:accent": "node scripts/check-accent-contrast.mjs"
   },
   "dependencies": {
     "@blocknote/core": "^0.51.3",

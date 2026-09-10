@@ -75,7 +75,7 @@ export default function FirstRunPanel({
                     <button
                         onClick={() => void addSample()}
                         disabled={seeding}
-                        className="btn-spectrum sheen inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25 disabled:opacity-60 sm:w-auto"
+                        className="btn-accent inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg disabled:opacity-60 sm:w-auto"
                     >
                         {seeding && <Loader2 size={15} className="animate-spin" />}
                         Add a sample note

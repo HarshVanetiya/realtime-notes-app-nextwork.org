@@ -106,7 +106,7 @@ export function LoginForm({
           <Button
             type="submit"
             disabled={isLoading}
-            className="btn-spectrum sheen h-11 w-full rounded-xl font-semibold shadow-lg shadow-[hsl(var(--spectrum-violet))]/25"
+            className="btn-accent h-11 w-full rounded-xl font-semibold shadow-lg"
           >
             {isLoading ? (
               <><Loader2 size={16} className="animate-spin mr-2" />Signing in...</>
