@@ -1,8 +1,16 @@
 // app/notes/layout.tsx
 import AppSidebar from '@/components/app-sidebar';
-import AmbientWash from '@/components/AmbientWash';
+import PreferencesSync from '@/components/preferences-sync';
+import { createClient } from '@/lib/supabase/server';
 import CommandPalette from '@/components/CommandPalette';
 import { Suspense } from 'react';
+
+/** Uncached auth access, so it lives inside its own Suspense boundary. */
+async function PreferencesGate() {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getClaims();
+    return <PreferencesSync userId={data?.claims?.sub ?? null} />;
+}
 
 export default function NotesLayout({
     children,
@@ -13,11 +21,13 @@ export default function NotesLayout({
         // `isolate` so the wash's negative z-index stays inside this stacking
         // context rather than sliding behind the page background entirely.
         <div className="relative isolate flex min-h-screen bg-background">
-            {/* The dashboard was a flat slab of near-black. This is the same
-                free wash the landing page uses — two soft radial gradients, no
-                blur and no animation, so it costs one paint and nothing after
-                that. `fixed` so it stays put while the note grid scrolls. */}
-            <AmbientWash tone="violet" fixed strength="strong" />
+            {/* No ambient wash. The base is matte on purpose — a flat
+                desaturated gray, with colour arriving only from the accent the
+                user picked. A gradient here is exactly what "no gloss, no
+                gradient" rules out. */}
+            <Suspense fallback={null}>
+                <PreferencesGate />
+            </Suspense>
             <a href="#main-content" className="skip-link">
                 Skip to content
             </a>

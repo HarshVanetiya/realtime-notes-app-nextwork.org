@@ -168,6 +168,27 @@ with checks as (
             join pg_namespace n on n.oid = p.pronamespace
             where n.nspname = 'public' and p.proname = 'note_search_text')
 
+    -- 0010 user preferences
+    union all
+    select 'user_preferences table exists (0010)',
+           exists (select 1 from information_schema.tables
+                   where table_schema = 'public' and table_name = 'user_preferences')
+    union all
+    select 'user_preferences has RLS with four owner-only policies (0010)',
+           (select relrowsecurity from pg_class where oid = 'public.user_preferences'::regclass)
+           and (select count(*) from pg_policies
+                where schemaname = 'public' and tablename = 'user_preferences') = 4
+           and not exists (select 1 from pg_policies
+                           where schemaname = 'public' and tablename = 'user_preferences'
+                             and roles && array['anon','public']::name[])
+    union all
+    -- The client writes this blob directly, so without a ceiling a bug could
+    -- push megabytes into a row that is fetched on every page load.
+    select 'user_preferences has a size ceiling (0010)',
+           (select convalidated from pg_constraint
+            where conrelid = 'public.user_preferences'::regclass
+              and conname = 'user_preferences_size')
+
     -- 0009 constraints
     union all
     select 'title and tag constraints exist (0009)',

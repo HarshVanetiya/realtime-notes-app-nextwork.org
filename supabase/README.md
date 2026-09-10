@@ -31,8 +31,9 @@ against a populated database is safe and changes nothing.
 | `0007_public_sharing.sql` | `is_public`, `public_slug`, the slug trigger, and the `get_public_note()` function behind `/n/[slug]` |
 | `0008_full_text_search.sql` | `search_vector` + GIN, the sort/paging indexes, and `search_notes()` / `count_notes()` / `note_tags()` |
 | `0009_constraints.sql` | Title length and tag limits, enforced by the database rather than only by the form |
+| `0010_user_preferences.sql` | Per-account accent, theme, layout density, tag colours and tag labels |
 
-`verify.sql` is read-only and checks all of the above landed — 27 checks. It asserts
+`verify.sql` is read-only and checks all of the above landed — 30 checks. It asserts
 *properties* rather than counting objects, which it did not always do: three earlier
 versions reported FAIL on a perfectly healthy project, once by counting policies and twice
 by assuming grants that Supabase sets by design. A check that cries wolf is worse than no
@@ -145,6 +146,11 @@ public.notes
   is_public    boolean      not null, default false
   public_slug  text         unique, minted and cleared by trigger — never by the client
   search_vector tsvector    generated, stored; title + tags + extracted body text
+
+public.user_preferences
+  user_id      uuid         primary key → auth.users(id) on delete cascade
+  prefs        jsonb        not null, default '{}' — appearance and layout, capped at 16 KB
+  updated_at   timestamptz  not null, maintained by the 0005 trigger
 
 storage bucket `note-images`, public read, objects at `<user_id>/<filename>`
 ```
