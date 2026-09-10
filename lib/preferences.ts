@@ -69,13 +69,20 @@ export const DEFAULTS: Preferences = {
     palette: DEFAULT_PALETTE,
     layout: 'grid',
     density: 'comfortable',
-    previewLines: 3,
+    previewLines: 8,
     showTags: true,
     showDate: true,
     tags: {},
 };
 
-/** Ratio and column count per density. Cards are portrait: taller than wide. */
+/**
+ * Ratio and column count per density. Cards are portrait: taller than wide.
+ *
+ * `previewLines` is a CEILING, not a target: the body fills whatever height the
+ * tile gives it and fades out at the bottom. The number only stops a very long
+ * note from rendering hundreds of clipped lines the browser then has to lay
+ * out and immediately hide.
+ */
 export const DENSITY: Record<
     Density,
     { ratio: string; columns: string; previewLines: number }
@@ -83,17 +90,17 @@ export const DENSITY: Record<
     compact: {
         ratio: '5 / 6',
         columns: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-        previewLines: 2,
+        previewLines: 4,
     },
     comfortable: {
         ratio: '4 / 5',
         columns: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-        previewLines: 3,
+        previewLines: 8,
     },
     large: {
         ratio: '3 / 4',
         columns: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3',
-        previewLines: 5,
+        previewLines: 12,
     },
 };
 
@@ -157,7 +164,7 @@ export function sanitize(raw: unknown): Preferences {
             ['compact', 'comfortable', 'large'] as const,
             DEFAULTS.density,
         ),
-        previewLines: Number.isFinite(lines) ? Math.min(8, Math.max(0, Math.round(lines))) : DEFAULTS.previewLines,
+        previewLines: Number.isFinite(lines) ? Math.min(12, Math.max(0, Math.round(lines))) : DEFAULTS.previewLines,
         showTags: typeof o.showTags === 'boolean' ? o.showTags : DEFAULTS.showTags,
         showDate: typeof o.showDate === 'boolean' ? o.showDate : DEFAULTS.showDate,
         tags,

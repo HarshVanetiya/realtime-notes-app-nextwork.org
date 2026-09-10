@@ -8,6 +8,12 @@ export default {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    // lib/ holds the density presets in lib/preferences.ts — literal class
+    // strings that a component composes at runtime. Tailwind only generates
+    // what it can see in these files, so leaving lib/ out meant every
+    // `grid-cols-*` in DENSITY silently did nothing and the grid fell back to
+    // whatever the last matching class in the stylesheet happened to be.
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {

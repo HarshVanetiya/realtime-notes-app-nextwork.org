@@ -8,8 +8,10 @@ import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import EditNoteModal from './EditNoteModal';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/toast-provider';
+import SpatialSurface from './SpatialSurface';
+import { usePreferences } from '@/lib/use-preferences';
+import { DENSITY, tagColor, tagLabel } from '@/lib/preferences';
 import { updateNote } from '@/lib/notes-api';
 
 function timeAgo(dateStr: string): string {
@@ -54,6 +56,9 @@ export default function NoteCard({
 }) {
     const supabase = createClient();
     const toast = useToast();
+    const prefs = usePreferences();
+    const shape = DENSITY[prefs.density];
+    const isList = prefs.layout === 'list';
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
 
@@ -127,40 +132,34 @@ export default function NoteCard({
 
 
     return (
-        <div
-            style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+        <SpatialSurface
             className={`
-                group relative flex flex-col rounded-2xl border border-border/60 bg-card/70
-                hover:border-[hsl(var(--spectrum-violet))]/40 hover:bg-foreground/[0.03]
-                hover:shadow-[0_18px_40px_-14px_hsl(var(--spectrum-violet)/0.45)]
-                motion-safe:hover:-translate-y-1
-                overflow-hidden animate-fade-in
-                transition-[transform,box-shadow,border-color,background-color]
-                duration-base ease-standard
-                ${note.is_favorite ? 'border-amber-400/30 bg-amber-500/10' : ''}
+                flex flex-col animate-fade-in
+                ${note.is_favorite ? 'ring-1 ring-amber-400/30' : ''}
                 ${isDeleting ? 'opacity-50 scale-95 pointer-events-none' : ''}
             `}
         >
-            {/* The card lights up from its own edge on hover rather than just
-                changing border colour — a flat 1px state change is what made
-                the grid feel inert. Opacity only, so it composites. */}
+            {/* The ratio is fixed so the grid reads as a board of tiles rather
+                than a ragged column of boxes. Content that does not fit is
+                masked rather than cut mid-glyph — see the body below. On a
+                phone, and in list mode, a fixed ratio would waste the screen,
+                so it only applies from `sm` up in grid mode. */}
             <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-base ease-standard group-hover:opacity-100"
                 style={{
-                    background:
-                        'radial-gradient(120% 80% at 50% 0%, hsl(var(--spectrum-violet) / 0.14), transparent 60%)',
+                    animationDelay: `${Math.min(index * 30, 300)}ms`,
+                    ...(isList ? {} : { ['--tile-ratio' as string]: shape.ratio }),
                 }}
-            />
+                className={`flex min-h-0 flex-1 flex-col ${
+                    isList ? '' : 'sm:aspect-[var(--tile-ratio)]'
+                }`}
+            >
 
-            {/* Favorite indicator stripe */}
-            {note.is_favorite && (
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-400" />
-            )}
+            {/* No stripe: the ring on the tile and the star already say it
+                twice. A third marker was noise. */}
 
             {/* Image */}
             {note.image_url ? (
-                <div className="relative h-36 overflow-hidden bg-muted border-b border-border/40">
+                <div className="relative h-28 flex-shrink-0 overflow-hidden border-b border-border/40 bg-muted">
                     <Image
                         src={note.image_url}
                         alt={`Attachment for ${note.title}`}
@@ -172,7 +171,7 @@ export default function NoteCard({
             ) : null}
 
             {/* Body */}
-            <div className="flex-1 p-4">
+            <div className="flex min-h-0 flex-1 flex-col p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                     {/* A stretched link: real link semantics (ctrl/middle-click,
                         announced as a link, reachable by Tab) while the whole
@@ -255,8 +254,20 @@ export default function NoteCard({
                     </div>
                 )}
 
-                {previewText && (
-                    <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground break-words [overflow-wrap:anywhere]">
+                {previewText && prefs.previewLines > 0 && (
+                    /* A fixed-ratio tile will sometimes hold less than the note
+                       contains — most of these notes are long URLs. The mask
+                       fades the final line out instead of slicing through it,
+                       so it reads as "there is more inside" rather than as a
+                       rendering bug. */
+                    <p
+                        style={{
+                            ['--lines' as string]: String(
+                                Math.min(prefs.previewLines, shape.previewLines),
+                            ),
+                        }}
+                        className="mb-3 min-h-0 flex-1 overflow-hidden text-sm leading-relaxed text-muted-foreground break-words [overflow-wrap:anywhere] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:var(--lines)] [mask-image:linear-gradient(to_bottom,#000_70%,transparent_100%)]"
+                    >
                         {previewText}
                     </p>
                 )}
@@ -271,16 +282,24 @@ export default function NoteCard({
             </div>
 
             {/* Tags — capped so a heavily tagged note can't unbalance the grid */}
-            {(note.tags ?? []).length > 0 && (
-                <div className="relative z-10 flex flex-wrap items-center gap-1.5 px-4 pb-3">
+            {prefs.showTags && (note.tags ?? []).length > 0 && (
+                <div className="relative z-10 flex flex-shrink-0 flex-wrap items-center gap-1.5 px-4 pb-3">
                     {(note.tags ?? []).slice(0, 3).map((tag) => (
-                        <Badge
+                        <span
                             key={tag}
-                            variant="secondary"
-                            className="max-w-full break-all py-0.5 font-medium"
+                            /* The colour comes from a stable hash into the
+                               palette unless the user overrode it; the label is
+                               display-only, so the stored tag is untouched and
+                               filtering still works. */
+                            style={{
+                                color: tagColor(tag, prefs),
+                                borderColor: `${tagColor(tag, prefs)}55`,
+                                backgroundColor: `${tagColor(tag, prefs)}1a`,
+                            }}
+                            className="max-w-full break-all rounded-md border px-1.5 py-0.5 text-xs font-medium"
                         >
-                            {tag}
-                        </Badge>
+                            {tagLabel(tag, prefs)}
+                        </span>
                     ))}
                     {(note.tags ?? []).length > 3 && (
                         <span className="text-xs text-muted-foreground">
@@ -291,12 +310,12 @@ export default function NoteCard({
             )}
 
             {/* Footer */}
-            <div className="px-4 pb-4 flex items-center justify-between gap-2">
+            <div className="mt-auto flex flex-shrink-0 items-center justify-between gap-2 px-4 pb-4">
                 <span
                     className="text-xs text-muted-foreground"
                     suppressHydrationWarning
                 >
-                    {timeAgo(note.created_at)}
+                    {prefs.showDate ? timeAgo(note.created_at) : ''}
                 </span>
                 <span className="flex flex-shrink-0 items-center gap-2">
                     {pending && (
@@ -308,14 +327,9 @@ export default function NoteCard({
                             Pending sync
                         </span>
                     )}
-                    {note.is_favorite && (
-                        <span className="text-xs font-medium text-amber-500/80 bg-amber-400/10 px-2 py-0.5 rounded-full">
-                            Favorite
-                        </span>
-                    )}
                 </span>
             </div>
-
-        </div>
+            </div>
+        </SpatialSurface>
     );
 }

@@ -22,6 +22,8 @@ import CreateNoteModal from './CreateNoteModal';
 import NotesGridSkeleton from './NotesGridSkeleton';
 import FirstRunPanel from './FirstRunPanel';
 import { dismissOnboarding, hasDismissedOnboarding } from '@/lib/onboarding';
+import { usePreferences } from '@/lib/use-preferences';
+import { DENSITY } from '@/lib/preferences';
 import {
     queueServerSnapshot,
     queueSnapshot,
@@ -61,6 +63,7 @@ export default function NotesList({
 
     const toast = useToast();
     const isOnline = useOnlineStatus();
+    const prefs = usePreferences();
     const [notes, setNotes] = useState<Note[]>(initialNotes);
 
     // Which criteria the rows currently in `notes` answer. Compared against
@@ -685,7 +688,17 @@ export default function NotesList({
 
         return (
             <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {/* Capped and centred. Running the full width of a wide
+                    monitor stretched every card into a letterbox, which is what
+                    made the grid read as a spreadsheet. Column count now comes
+                    from the density setting rather than being hard-coded. */}
+                <div
+                    className={`mx-auto grid w-full max-w-[1360px] gap-4 ${
+                        prefs.layout === 'list'
+                            ? 'grid-cols-1'
+                            : DENSITY[prefs.density].columns
+                    }`}
+                >
                     {displayedNotes.map((note, index) => (
                         <NoteCard
                             key={note.id}
@@ -716,7 +729,10 @@ export default function NotesList({
                         That&apos;s all of them.
                     </p>
                 )}
-                <div className="pb-32" />
+                {/* The search bar and new-note button float over the
+                    bottom of the viewport, so the grid needs room to
+                    scroll clear of them. */}
+                <div className="pb-40" />
             </>
         );
     }
@@ -794,7 +810,7 @@ export default function NotesList({
             )}
 
             {/* Notes grid */}
-            <div className="animate-fade-in">
+            <div className="mx-auto w-full max-w-[1360px] animate-fade-in">
                 {notesWithPending.length > 0 && (
                     <NoteToolbar
                         tags={availableTags}
