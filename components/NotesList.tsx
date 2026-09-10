@@ -23,7 +23,6 @@ import NotesGridSkeleton from './NotesGridSkeleton';
 import FirstRunPanel from './FirstRunPanel';
 import { dismissOnboarding, hasDismissedOnboarding } from '@/lib/onboarding';
 import { usePreferences } from '@/lib/use-preferences';
-import { DENSITY } from '@/lib/preferences';
 import {
     queueServerSnapshot,
     queueSnapshot,
@@ -688,16 +687,36 @@ export default function NotesList({
 
         return (
             <>
-                {/* Capped and centred. Running the full width of a wide
-                    monitor stretched every card into a letterbox, which is what
-                    made the grid read as a spreadsheet. Column count now comes
-                    from the density setting rather than being hard-coded. */}
+                {/* One rule, no breakpoints.
+                    `auto-fill` inside a container capped at exactly N cards'
+                    worth can never lay out more than N columns, and lays out
+                    fewer by itself once the viewport is narrower than that —
+                    so the "max cards per row" ceiling and the responsive
+                    behaviour are the same mechanism. Both numbers arrive as
+                    custom properties set before the first paint (see
+                    gridVars), so the grid does not reflow on hydration.
+
+                    `min(var(--card-w), 100%)` is what stops a 420px `large`
+                    card overflowing a 375px phone: below that width the track
+                    collapses to the viewport instead of forcing a scrollbar. */}
                 <div
-                    className={`mx-auto grid w-full max-w-[1360px] gap-4 ${
-                        prefs.layout === 'list'
-                            ? 'grid-cols-1'
-                            : DENSITY[prefs.density].columns
-                    }`}
+                    /* `[&>*]:min-w-0` is not cosmetic. Grid items default to
+                       `min-width: auto`, so a card's min-content width — a
+                       long unbreakable URL, which is most of these notes —
+                       becomes a floor the track cannot go below, and the whole
+                       container is forced wider than the viewport. Measured at
+                       375px: a 240px card produced a 423px track and a
+                       horizontal scrollbar. Tailwind's own `grid-cols-*` hide
+                       this by emitting `minmax(0,1fr)`; sizing tracks from a
+                       custom property does not, so the items have to be told
+                       they may shrink. */
+                    className="grid w-full gap-4 [&>*]:min-w-0"
+                    style={{
+                        gridTemplateColumns:
+                            prefs.layout === 'list'
+                                ? '1fr'
+                                : 'repeat(auto-fill, minmax(min(var(--card-w), 100%), 1fr))',
+                    }}
                 >
                     {displayedNotes.map((note, index) => (
                         <NoteCard
@@ -810,7 +829,14 @@ export default function NotesList({
             )}
 
             {/* Notes grid */}
-            <div className="mx-auto w-full max-w-[1360px] animate-fade-in">
+            {/* The toolbar shares the grid's width. With a cards-per-row
+                ceiling set, the board can be much narrower than the page, and
+                filter chips floating off to the left of it read as belonging
+                to something else. */}
+            <div
+                className="mx-auto w-full animate-fade-in"
+                style={{ maxWidth: 'var(--grid-max-w)' }}
+            >
                 {notesWithPending.length > 0 && (
                     <NoteToolbar
                         tags={availableTags}

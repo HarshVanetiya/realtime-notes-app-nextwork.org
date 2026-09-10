@@ -8,11 +8,13 @@ export default {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    // lib/ holds the density presets in lib/preferences.ts — literal class
-    // strings that a component composes at runtime. Tailwind only generates
-    // what it can see in these files, so leaving lib/ out meant every
-    // `grid-cols-*` in DENSITY silently did nothing and the grid fell back to
-    // whatever the last matching class in the stylesheet happened to be.
+    // lib/ is scanned because presets there can hold literal class strings a
+    // component composes at runtime, and Tailwind only generates what it can
+    // see. That bit once: the `grid-cols-*` strings DENSITY used to carry were
+    // never generated, so "compact" rendered LARGER than "comfortable". The
+    // grid no longer works that way — it sizes its tracks from custom
+    // properties, which need no class generation at all — but the glob stays
+    // so the next preset added here does not repeat the lesson.
     "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {

@@ -12,6 +12,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { usePreferences } from '@/lib/use-preferences';
 import {
+    COLUMN_CHOICES,
     DEFAULT_PALETTE,
     setPreferences,
     tagColor,
@@ -256,7 +257,7 @@ export default function PreferencesDialog({ userId }: { userId: string | null })
                                     <div>
                                         <p className={legend}>Card size</p>
                                         <p className={hint}>
-                                            Sets the tile shape and how many fit across.
+                                            How big each tile is.
                                         </p>
                                     </div>
                                     <div className="flex gap-1 rounded-xl border border-border p-1">
@@ -274,6 +275,42 @@ export default function PreferencesDialog({ userId }: { userId: string | null })
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Only in grid mode: a list is one note per
+                                    row by definition, so a ceiling on cards
+                                    per row has nothing to act on. The View
+                                    toggle is two rows up, so the reason it
+                                    comes and goes is on screen. */}
+                                {prefs.layout === 'grid' && (
+                                    <div className={row}>
+                                        <div>
+                                            <p className={legend}>Cards per row</p>
+                                            <p className={hint}>
+                                                Auto fills the width; a fixed number
+                                                centres the grid.
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-1 rounded-xl border border-border p-1">
+                                            {COLUMN_CHOICES.map((c) => (
+                                                <button
+                                                    key={String(c)}
+                                                    onClick={() => update({ columns: c })}
+                                                    aria-pressed={prefs.columns === c}
+                                                    aria-label={
+                                                        c === 'auto'
+                                                            ? 'Automatic cards per row'
+                                                            : `${c} cards per row`
+                                                    }
+                                                    className={`${seg} ${
+                                                        prefs.columns === c ? segOn : segOff
+                                                    }`}
+                                                >
+                                                    {c === 'auto' ? 'Auto' : c}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className={row}>
                                     <div>
@@ -322,9 +359,17 @@ export default function PreferencesDialog({ userId }: { userId: string | null })
                                                 prefs[key] ? 'bg-primary' : 'bg-muted'
                                             }`}
                                         >
+                                            {/* `left-0.5` is load-bearing. Without an
+                                                explicit left this is positioned at its
+                                                STATIC position, and a <button> defaults to
+                                                `text-align: center` — so a zero-width inline
+                                                span starts at the middle of the 44px track,
+                                                not its left edge. The 22px "on" offset then
+                                                put the knob at x=44 on a 44px track: fully
+                                                outside it. Now: off 2→22px, on 22→42px. */}
                                             <span
-                                                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-fast ease-spring ${
-                                                    prefs[key] ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+                                                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-fast ease-spring ${
+                                                    prefs[key] ? 'translate-x-5' : 'translate-x-0'
                                                 }`}
                                             />
                                         </button>

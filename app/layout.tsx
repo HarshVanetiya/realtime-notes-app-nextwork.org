@@ -81,8 +81,9 @@ export default function RootLayout({
               var v=(m.vars||{})[t]||{};
               var el=document.documentElement;
               for(var k in v){if(k.indexOf('--')===0)el.style.setProperty(k,String(v[k]));}
+              var g=m.grid||{};
+              for(var j in g){if(j.indexOf('--')===0)el.style.setProperty(j,String(g[j]));}
               if(m.layout)el.dataset.layout=m.layout;
-              if(m.density)el.dataset.density=m.density;
             }catch(e){}})();`,
           }}
         />

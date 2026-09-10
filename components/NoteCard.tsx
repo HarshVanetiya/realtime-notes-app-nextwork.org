@@ -145,10 +145,10 @@ export default function NoteCard({
                 phone, and in list mode, a fixed ratio would waste the screen,
                 so it only applies from `sm` up in grid mode. */}
             <div
-                style={{
-                    animationDelay: `${Math.min(index * 30, 300)}ms`,
-                    ...(isList ? {} : { ['--tile-ratio' as string]: shape.ratio }),
-                }}
+                // --tile-ratio is set on <html> before the first paint (see
+                // gridVars) rather than inline here — set per card from client
+                // state, every tile reflowed on hydration.
+                style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                 className={`flex min-h-0 flex-1 flex-col ${
                     isList ? '' : 'sm:aspect-[var(--tile-ratio)]'
                 }`}

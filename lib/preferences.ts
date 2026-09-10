@@ -16,6 +16,10 @@ import { deriveAccentSteps, hslToken, parseColor, rgbToHex } from '@/lib/color';
 export type Theme = 'light' | 'dark' | 'system';
 export type LayoutMode = 'grid' | 'list';
 export type Density = 'compact' | 'comfortable' | 'large';
+/** A ceiling on cards per row, or 'auto' to fill the available width. */
+export type Columns = 'auto' | 2 | 3 | 4 | 5 | 6;
+
+export const COLUMN_CHOICES: Columns[] = ['auto', 2, 3, 4, 5, 6];
 
 export type TagMeta = {
     /** Overrides the colour auto-assigned from the palette. */
@@ -32,6 +36,9 @@ export type Preferences = {
     palette: string[];
     layout: LayoutMode;
     density: Density;
+    /** Independent of density: density sets how BIG a card is, this sets how
+     *  many of them are allowed across before the row wraps. */
+    columns: Columns;
     previewLines: number;
     showTags: boolean;
     showDate: boolean;
@@ -79,6 +86,7 @@ export const DEFAULTS: Preferences = {
     palette: DEFAULT_PALETTE,
     layout: 'grid',
     density: 'comfortable',
+    columns: 'auto',
     previewLines: 8,
     showTags: true,
     showDate: true,
@@ -86,7 +94,17 @@ export const DEFAULTS: Preferences = {
 };
 
 /**
- * Ratio and column count per density. Cards are portrait: taller than wide.
+ * How big a card is at each size setting — its shape, and its natural width.
+ *
+ * Density no longer decides how many fit across; `columns` does. That split is
+ * the point: a small card and three per row is a legitimate combination, and
+ * welding the two together made it unreachable.
+ *
+ * `cardWidth` is the width a card wants. The grid hands out at least this much
+ * to every column, so the same setting drives both the fixed-column max-width
+ * and, in `auto`, how many columns fit. Values are the widths these densities
+ * were already rendering at (compact was landing at 252px, large at 430px), so
+ * nothing visibly resizes for someone who never touches the new control.
  *
  * `previewLines` is a CEILING, not a target: the body fills whatever height the
  * tile gives it and fades out at the bottom. The number only stops a very long
@@ -95,24 +113,19 @@ export const DEFAULTS: Preferences = {
  */
 export const DENSITY: Record<
     Density,
-    { ratio: string; columns: string; previewLines: number }
+    { ratio: string; cardWidth: number; previewLines: number }
 > = {
-    compact: {
-        ratio: '5 / 6',
-        columns: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-        previewLines: 4,
-    },
-    comfortable: {
-        ratio: '4 / 5',
-        columns: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-        previewLines: 8,
-    },
-    large: {
-        ratio: '3 / 4',
-        columns: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3',
-        previewLines: 12,
-    },
+    compact: { ratio: '5 / 6', cardWidth: 240, previewLines: 4 },
+    comfortable: { ratio: '4 / 5', cardWidth: 320, previewLines: 8 },
+    large: { ratio: '3 / 4', cardWidth: 420, previewLines: 12 },
 };
+
+/** The grid's gutter, in px. Matches `gap-4` on the grid in NotesList. */
+export const GRID_GAP = 16;
+
+/** Width of the whole grid when `columns` is 'auto' — a wide monitor's worth of
+ *  cards, past which they stretched into letterboxes. */
+export const AUTO_MAX_WIDTH = 1360;
 
 /* ------------------------------------------------------------------ *
  * Validation
@@ -125,6 +138,18 @@ function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallback: T)
     return typeof v === 'string' && (allowed as readonly string[]).includes(v)
         ? (v as T)
         : fallback;
+}
+
+/**
+ * `columns` is the one numeric enum here, and it reaches CSS as a repeat()
+ * count — so anything that is not literally 'auto' or a whole number in range
+ * falls back rather than being coerced. A string '3' from an older blob is
+ * accepted; '3; }' is not.
+ */
+function safeColumns(v: unknown): Columns {
+    if (v === 'auto') return 'auto';
+    const n = typeof v === 'number' || typeof v === 'string' ? Number(v) : NaN;
+    return Number.isInteger(n) && n >= 2 && n <= 6 ? (n as Columns) : 'auto';
 }
 
 /** Any colour that does not parse becomes the fallback rather than reaching CSS. */
@@ -174,6 +199,7 @@ export function sanitize(raw: unknown): Preferences {
             ['compact', 'comfortable', 'large'] as const,
             DEFAULTS.density,
         ),
+        columns: safeColumns(o.columns),
         previewLines: Number.isFinite(lines) ? Math.min(12, Math.max(0, Math.round(lines))) : DEFAULTS.previewLines,
         showTags: typeof o.showTags === 'boolean' ? o.showTags : DEFAULTS.showTags,
         showDate: typeof o.showDate === 'boolean' ? o.showDate : DEFAULTS.showDate,
@@ -264,11 +290,42 @@ export function accentVars(accent: string): Record<'light' | 'dark', CssVars> {
     return out;
 }
 
+/**
+ * The three numbers the grid is built from, as custom properties.
+ *
+ * They live on <html> rather than in the component because they have to be
+ * right in the FIRST painted frame — the same reason the accent does. The
+ * pre-paint script previously wrote `dataset.layout` and `dataset.density`
+ * instead, which nothing read: the grid was server-rendered at the default
+ * density and snapped to the real one on hydration.
+ *
+ * `--grid-max-w` is the whole trick. Capping the container at exactly N cards'
+ * worth means `repeat(auto-fill, ...)` can never lay out more than N columns,
+ * and lays out fewer on its own when the viewport is narrower — one rule gives
+ * both the ceiling and the responsiveness, with no breakpoints to maintain.
+ */
+export function gridVars(prefs: Preferences): CssVars {
+    const { cardWidth, ratio } = DENSITY[prefs.density];
+    // A list is one note per row, so a cards-per-row ceiling means nothing
+    // there — narrowing the page to three cards' width would just squeeze the
+    // rows for no reason.
+    const n = prefs.layout === 'grid' ? prefs.columns : 'auto';
+    const maxWidth =
+        n === 'auto' ? AUTO_MAX_WIDTH : n * cardWidth + (n - 1) * GRID_GAP;
+    return {
+        '--card-w': `${cardWidth}px`,
+        '--grid-max-w': `${maxWidth}px`,
+        '--tile-ratio': ratio,
+    };
+}
+
 export type Mirror = {
     theme: Theme;
     layout: LayoutMode;
     density: Density;
+    columns: Columns;
     vars: Record<'light' | 'dark', CssVars>;
+    grid: CssVars;
 };
 
 export function toMirror(prefs: Preferences): Mirror {
@@ -276,7 +333,9 @@ export function toMirror(prefs: Preferences): Mirror {
         theme: prefs.theme,
         layout: prefs.layout,
         density: prefs.density,
+        columns: prefs.columns,
         vars: accentVars(prefs.accent),
+        grid: gridVars(prefs),
     };
 }
 
@@ -289,8 +348,8 @@ export function applyToDocument(prefs: Preferences, resolved: 'light' | 'dark') 
     const el = document.documentElement;
     const vars = accentVars(prefs.accent)[resolved];
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
+    for (const [k, v] of Object.entries(gridVars(prefs))) el.style.setProperty(k, v);
     el.dataset.layout = prefs.layout;
-    el.dataset.density = prefs.density;
 }
 
 /* ------------------------------------------------------------------ *
