@@ -38,11 +38,21 @@ export type Preferences = {
     tags: Record<string, TagMeta>;
 };
 
-/** A calm desaturated blue. Measured: white on it is 4.61:1. */
-export const DEFAULT_ACCENT = '#2b7fd4';
+/**
+ * A calm desaturated blue — hsl(212 72% 48%), the value the default tokens in
+ * app/globals.css were measured against. White on it is 4.61:1.
+ *
+ * It is written here as the hex the derivation consumes, and the CSS tokens
+ * are that derivation's output, so the server-rendered first frame of a fresh
+ * account is byte-identical to what the client computes on hydration. It was
+ * previously #2b7fd4, a visibly lighter blue on which white text is 4.14:1 —
+ * so the derivation picked BLACK for the button label while the stylesheet
+ * said white. scripts/check-accent-contrast.mjs now asserts the two agree.
+ */
+export const DEFAULT_ACCENT = '#2275d3';
 
 export const DEFAULT_PALETTE = [
-    '#2b7fd4', // blue
+    '#2275d3', // blue
     '#12a594', // teal
     '#3e9b4f', // green
     '#c2820a', // amber
@@ -53,7 +63,7 @@ export const DEFAULT_PALETTE = [
 ];
 
 export const ACCENT_PRESETS = [
-    { name: 'Blue', value: '#2b7fd4' },
+    { name: 'Blue', value: '#2275d3' },
     { name: 'Teal', value: '#12a594' },
     { name: 'Green', value: '#3e9b4f' },
     { name: 'Amber', value: '#c2820a' },
@@ -194,6 +204,36 @@ export function tagColor(tag: string, prefs: Preferences): string {
 
 export function tagLabel(tag: string, prefs: Preferences): string {
     return prefs.tags[tag]?.label || tag;
+}
+
+/**
+ * The two colours a tag chip needs, derived from its one palette colour.
+ *
+ * The palette holds FILL-grade colours — right for a swatch, wrong for 11px
+ * text, which is the same distinction `--primary` and `--primary-text` exist
+ * to draw for the accent. Chips were painting the raw value as their label on
+ * a 10%-alpha wash of itself, and axe found all twelve at once: nowhere near
+ * 4.5:1.
+ *
+ * So the chip is a SOLID fill of the tag's colour with black or white on top,
+ * whichever is readable — the `accentForeground` derivation, which depends
+ * only on the fill. That matters: a text step would have to be walked against
+ * the page background, and the components rendering chips do not know the
+ * theme at render time (next-themes resolves it after hydration, so every chip
+ * would change colour on load). This version needs no theme at all, and
+ * scripts/check-accent-contrast.mjs already sweeps 3,888 colours proving the
+ * derived foreground clears AA on every one of them.
+ */
+export function tagChipColors(
+    tag: string,
+    prefs: Preferences,
+): { color: string; backgroundColor: string; borderColor: string } {
+    const raw = tagColor(tag, prefs);
+    const steps = deriveAccentSteps(raw, 'light'); // accentForeground ignores the theme
+    const fg = steps
+        ? `hsl(${steps.accentForeground.h} ${steps.accentForeground.s}% ${steps.accentForeground.l}%)`
+        : '#fff';
+    return { color: fg, backgroundColor: raw, borderColor: raw };
 }
 
 /* ------------------------------------------------------------------ *

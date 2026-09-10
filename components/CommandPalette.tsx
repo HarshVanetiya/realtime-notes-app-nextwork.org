@@ -16,6 +16,7 @@ import {
     ArrowDownUp,
     Keyboard,
     Download,
+    SlidersHorizontal,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchNotesPage } from '@/lib/notes-query';
@@ -287,6 +288,21 @@ export default function CommandPalette() {
                         >
                             <Download size={15} className="flex-shrink-0 text-muted-foreground" />
                             Export all notes as Markdown
+                        </Command.Item>
+                        <Command.Item
+                            value="preferences settings appearance accent theme layout tags colors"
+                            onSelect={() =>
+                                run(() =>
+                                    document.dispatchEvent(
+                                        new CustomEvent('open-preferences'),
+                                    ),
+                                )
+                            }
+                            className={ITEM}
+                        >
+                            <SlidersHorizontal size={15} className="flex-shrink-0 text-muted-foreground" />
+                            Preferences
+                            <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">⌘,</kbd>
                         </Command.Item>
                         <Command.Item value="keyboard shortcuts help" onSelect={() => run(() => setHelpOpen(true))} className={ITEM}>
                             <Keyboard size={15} className="flex-shrink-0 text-muted-foreground" />

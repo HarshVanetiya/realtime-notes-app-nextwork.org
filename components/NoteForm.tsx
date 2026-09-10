@@ -286,7 +286,7 @@ export default function NoteForm({ userId, onSuccess, onCancel, initialData }: {
                                 <button
                                     type="button"
                                     onClick={removeImage}
-                                    className="absolute top-2 right-2 flex items-center gap-2 rounded-xl bg-destructive/90 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive"
+                                    className="absolute top-2 right-2 flex items-center gap-2 rounded-xl bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:brightness-110"
                                 >
                                     <X size={14} />
                                     Remove

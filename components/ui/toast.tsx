@@ -32,7 +32,10 @@ ToastViewport.displayName = "ToastViewport";
 
 const toastVariants = cva(
   cn(
-    "group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-xl border p-4 pr-10 shadow-lg backdrop-blur-xl transition-all",
+    // No backdrop-blur: toasts animate in over the grid, so the
+    // blur would be recomputed for every frame of the slide. The
+    // variants below all set an opaque fill instead.
+    "group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-xl border p-4 pr-10 shadow-lg transition-all",
     "data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2 data-[state=open]:fade-in-0",
     "data-[state=closed]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full",
     "data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none",
@@ -42,9 +45,9 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        info: "border-border/60 bg-card/95 text-foreground",
-        success: "border-emerald-500/30 bg-card/95 text-foreground",
-        error: "border-destructive/40 bg-card/95 text-foreground",
+        info: "border-border/60 bg-popover text-foreground",
+        success: "border-emerald-500/30 bg-popover text-foreground",
+        error: "border-destructive/40 bg-popover text-foreground",
       },
     },
     defaultVariants: { variant: "info" },

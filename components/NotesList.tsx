@@ -827,10 +827,13 @@ export default function NotesList({
             <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-[calc(env(safe-area-inset-bottom)+2rem)]">
                 <div className="pointer-events-auto flex max-w-full items-center gap-3 sm:gap-4 animate-in slide-in-from-bottom-12 duration-700 fade-in ease-out-back">
                     {/* Search Capsule (Island 1) */}
-                    <div className="group relative flex h-14 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-full border border-border/50 bg-background/70 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-2xl transition-all duration-500 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30 hover:border-primary/40 hover:shadow-primary/20 sm:max-w-[380px] sm:gap-3 sm:px-6 md:max-w-[460px] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] dark:focus-within:bg-white/10">
-                        {/* Animated shine effect on hover */}
-                        <div className="pointer-events-none absolute top-0 -left-[100%] z-0 block h-full w-1/2 -skew-x-12 transform bg-gradient-to-r from-transparent to-white/10 opacity-0 group-hover:animate-shine group-hover:opacity-100"></div>
-
+                    {/* The capsule is a panel, not a blurred pane. It sits over
+                        the scrolling grid, so a backdrop-filter here meant
+                        re-reading everything behind it on every scroll frame —
+                        the most expensive possible place to put one. The
+                        sweeping gradient "shine" went with it: an animated
+                        gradient is the gloss the matte base rules out. */}
+                    <div className="panel group relative flex h-14 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-full px-4 transition-[border-color,box-shadow] duration-base ease-standard focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30 hover:border-primary/40 sm:max-w-[380px] sm:gap-3 sm:px-6 md:max-w-[460px]">
                         <Search
                             size={20}
                             className="relative z-10 flex-shrink-0 text-muted-foreground transition-all duration-300 group-focus-within:text-primary-text"
@@ -859,10 +862,13 @@ export default function NotesList({
                     <CreateNoteModal>
                         <button
                             aria-label="Create note"
-                            className="btn-accent group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg hover:scale-[1.08] hover:"
+                            // `hover:` with nothing after it was a dangling
+                            // class Tailwind silently dropped. The blurred
+                            // inner glow is gone too — .btn-accent already
+                            // brightens on hover, without a filter on a layer
+                            // that is also being scaled.
+                            className="btn-accent group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg"
                         >
-                            {/* Inner glow on hover */}
-                            <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 blur-sm transition-opacity duration-300 group-hover:opacity-100"></div>
                             <Plus
                                 size={26}
                                 className="relative z-10 stroke-[2.5] transition-transform duration-500 ease-in-out group-hover:rotate-90"

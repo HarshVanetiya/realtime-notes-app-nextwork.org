@@ -34,9 +34,9 @@
            `bg-primary` / `text-primary-text` in the app then follows the
            accent with no component churn. shadcn's own --accent below is a
            muted hover surface and is left alone. */
-        --primary: 212 72% 48%;        /* white on this: 4.61:1 — measured, not eyeballed */
+        --primary: 211.9 72.2% 48%;        /* white on this: 4.61:1 */
         --primary-foreground: 0 0% 100%;
-        --primary-text: 212 72% 38%;   /* on --background: 6.26:1 */
+        --primary-text: 211.9 72.2% 41%;   /* worst surface (a 15% accent wash): 4.62:1 */
 
         --secondary: 30 6% 92%;
         --secondary-foreground: 220 12% 14%;
@@ -55,7 +55,7 @@
 
         --border: 30 6% 87%;
         --input: 30 6% 87%;
-        --ring: 212 72% 48%;
+        --ring: 211.9 72.2% 48%;
 
         --radius: 1rem;
 
@@ -105,9 +105,9 @@
         --popover: 220 6% 17%;
         --popover-foreground: 220 12% 92%;
 
-        --primary: 212 72% 58%;        /* dark fg on this: 5.61:1 */
-        --primary-foreground: 220 30% 8%;
-        --primary-text: 212 72% 68%;   /* on --background: 6.81:1 */
+        --primary: 211.9 72.2% 48%;        /* white on this: 4.61:1 */
+        --primary-foreground: 0 0% 100%;
+        --primary-text: 211.9 72.2% 60%;   /* worst surface (a 15% accent wash): 4.59:1 */
 
         --secondary: 220 6% 20%;
         --secondary-foreground: 220 12% 92%;
@@ -125,7 +125,7 @@
 
         --border: 220 6% 24%;
         --input: 220 6% 24%;
-        --ring: 212 72% 58%;
+        --ring: 211.9 72.2% 48%;
 
         --sidebar-bg: 220 6% 10%;
         --sidebar-border: 220 6% 20%;
@@ -758,6 +758,75 @@
         border-color: hsl(var(--primary) / 0.35);
     }
 
+    /* ---- Raised panels --------------------------------------------------
+       A tile's fill is low-alpha: right for something sitting ON the page,
+       wrong for something floating OVER it, where whatever is underneath
+       shows through the text. Panels get the opaque --popover step instead,
+       one lightness above the page, and the deeper shadow. Same hairline and
+       same lit top edge, so they read as the same material.
+
+       This is also why the Preferences modal is not `bg-background`: an
+       identical fill to the page behind it reads as a hole, not a panel. */
+    .panel {
+        background-color: hsl(var(--popover));
+        border: 1px solid hsl(var(--tile-border));
+        /* The lit top edge is folded into the same declaration as the drop
+           shadow rather than drawn on a `::before` like .tile does. A pseudo
+           element would need `position: relative` on .panel, and .panel is
+           applied to elements that are already `fixed` or `absolute` — it
+           would move them. */
+        box-shadow:
+            inset 0 1px 0 0 hsl(var(--tile-highlight)),
+            var(--tile-shadow-lifted);
+    }
+
+    /* ---- The rail -------------------------------------------------------
+       Deliberately DARKER than the page (--sidebar-bg is a step below
+       --background), not lighter. The rail is the wall the tiles float in
+       front of; lifting it would put it in the same plane as them and the
+       whole depth cue collapses. Flat colour, one hairline, no blur. */
+    .rail {
+        background-color: hsl(var(--sidebar-bg));
+        border-color: hsl(var(--sidebar-border));
+    }
+
+    /* A nav row. Inactive rows are invisible until hovered; the active one is
+       a small tile in the accent, which is the only colour in the rail. */
+    .rail-item {
+        position: relative;
+        border: 1px solid transparent;
+        transition:
+            background-color var(--duration-fast) var(--ease-standard),
+            border-color var(--duration-fast) var(--ease-standard),
+            color var(--duration-fast) var(--ease-standard),
+            transform var(--duration-fast) var(--ease-spring);
+    }
+
+    .rail-item:hover {
+        background-color: hsl(var(--foreground) / 0.06);
+    }
+
+    .rail-item[data-active='true'] {
+        background-color: hsl(var(--primary) / 0.14);
+        border-color: hsl(var(--primary) / 0.30);
+        box-shadow: var(--tile-shadow);
+    }
+
+    /* The active marker. On the collapsed rail there is no room for a label,
+       so this bar is the only thing distinguishing the current view — it is
+       drawn on the rail's own left edge, outside the row's padding. */
+    .rail-item[data-active='true']::after {
+        content: '';
+        position: absolute;
+        left: -0.75rem;
+        top: 50%;
+        width: 3px;
+        height: 1.25rem;
+        transform: translateY(-50%);
+        border-radius: 0 9999px 9999px 0;
+        background-color: hsl(var(--primary));
+    }
+
     /* ---- The glare -----------------------------------------------------
        A specular highlight that tracks the pointer. --mx/--my are written by
        a rAF-throttled pointermove; everything else is static, so a pointer
@@ -819,6 +888,9 @@
         display: none !important;
     }
     .tile-interactive:hover {
+        transform: none !important;
+    }
+    .pressable:active {
         transform: none !important;
     }
 }

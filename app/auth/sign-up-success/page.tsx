@@ -4,16 +4,16 @@ import { NotebookPen, MailCheck } from "lucide-react";
 export default function SignUpSuccessPage() {
   return (
     <main className="relative min-h-screen flex items-center justify-center p-6 overflow-hidden bg-background">
-      <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-violet-500/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl" />
-      </div>
+      {/* No decorative blobs. They were hard-coded indigo/violet discs
+          under a 64px blur — the one colour the accent setting exists
+          to get rid of, and large blurred layers on a page whose only
+          job is a form. The matte base carries it. */}
       <div className="relative w-full max-w-sm animate-scale-in">
         <div className="flex flex-col gap-6">
           {/* Brand */}
           <div className="flex flex-col items-center gap-3 mb-2">
             <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
-              <NotebookPen size={22} className="text-white" />
+              <NotebookPen size={22} className="text-primary-foreground" />
             </div>
           </div>
 

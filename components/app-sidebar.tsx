@@ -5,7 +5,6 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { useTheme } from 'next-themes';
 import {
     BookOpen,
     FilePlus,
@@ -16,8 +15,7 @@ import {
     LogOut,
     Menu,
     X,
-    Sun,
-    Moon,
+    SlidersHorizontal,
 } from 'lucide-react';
 
 import CreateNoteModal from './CreateNoteModal';
@@ -62,7 +60,6 @@ export default function AppSidebar() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { resolvedTheme, setTheme } = useTheme();
     const toast = useToast();
     const [isOpen, setIsOpen] = useState(false);
     const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -210,9 +207,6 @@ export default function AppSidebar() {
                 const Icon = item.icon;
                 const itemContent = (
                     <>
-                        {active && (
-                            <span className="bg-spectrum absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full" />
-                        )}
                         <Icon
                             size={17}
                             className={`flex-shrink-0 transition-colors ${active ? 'text-primary-text' : 'text-muted-foreground group-hover:text-foreground'}`}
@@ -225,22 +219,22 @@ export default function AppSidebar() {
                     </>
                 );
 
+                // `rail-item` carries the whole visual state, including the
+                // active bar, so the row markup is identical whether the rail
+                // is collapsed or expanded — one class, one source of truth.
                 const itemClassName = `
-                    group flex items-center rounded-xl text-sm font-medium
-                    transition-all duration-200 relative w-full text-left
-                    ${
-                        active
-                            ? ' text-primary-text shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                    }
+                    group rail-item pressable flex items-center rounded-xl text-sm font-medium
+                    w-full text-left
+                    ${active ? 'text-primary-text' : 'text-muted-foreground hover:text-foreground'}
                     ${collapsed ? 'gap-0 px-2 py-3 justify-center' : 'gap-3 px-3 py-3'}
                 `;
+                const itemProps = { className: itemClassName, 'data-active': active };
 
                 if (item.action === 'search') {
                     return (
                         <button
                             key={item.label}
-                            className={itemClassName}
+                            {...itemProps}
                             onClick={() => {
                                 setIsOpen(false);
                                 document.dispatchEvent(
@@ -250,7 +244,7 @@ export default function AppSidebar() {
                         >
                             {itemContent}
                             {!collapsed && (
-                                <kbd className="ml-auto rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                <kbd className="ml-auto rounded border border-[hsl(var(--tile-border))] bg-foreground/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                                     {item.shortcut}
                                 </kbd>
                             )}
@@ -262,7 +256,7 @@ export default function AppSidebar() {
                     return (
                         <button
                             key={item.label}
-                            className={itemClassName}
+                            {...itemProps}
                             onClick={handleCreateNoteClick}
                         >
                             {itemContent}
@@ -278,7 +272,7 @@ export default function AppSidebar() {
                             target="_blank"
                             rel="noreferrer"
                             onClick={() => setIsOpen(false)}
-                            className={itemClassName}
+                            {...itemProps}
                         >
                             {itemContent}
                         </a>
@@ -290,7 +284,7 @@ export default function AppSidebar() {
                         key={item.label}
                         href={item.href}
                         onClick={() => setIsOpen(false)}
-                        className={itemClassName}
+                        {...itemProps}
                     >
                         {itemContent}
                     </Link>
@@ -305,7 +299,9 @@ export default function AppSidebar() {
     ) => (
         <div className="flex flex-col h-full overflow-hidden">
             {/* Brand */}
-            <div className="flex items-center gap-2.5 px-4 py-6 border-b border-border/50 flex-shrink-0 bg-foreground/5 dark:bg-white/10">
+            {/* No wash behind the brand: a tinted strip is exactly the kind of
+                gloss the matte base rules out. A hairline is enough. */}
+            <div className="flex flex-shrink-0 items-center gap-2.5 border-b border-[hsl(var(--sidebar-border))] px-4 py-6">
                 {options?.onToggle ? (
                     <button
                         onClick={options.onToggle}
@@ -315,11 +311,11 @@ export default function AppSidebar() {
                         aria-expanded={!collapsed}
                         className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent transition-transform hover:scale-105"
                     >
-                        <PrismMark size={30} idSuffix="rail" />
+                        <PrismMark size={30} idSuffix="rail" tone="accent" />
                     </button>
                 ) : (
                     <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-transparent">
-                        <PrismMark size={30} idSuffix="rail-static" />
+                        <PrismMark size={30} idSuffix="rail-static" tone="accent" />
                     </div>
                 )}
                 <div
@@ -355,7 +351,7 @@ export default function AppSidebar() {
 
             {/* User + Logout */}
             <div
-                className={`py-4 border-t border-border/50 flex-shrink-0 overflow-visible transition-all duration-300 relative ${collapsed ? 'px-[19px]' : 'px-4'}`}
+                className={`relative flex-shrink-0 overflow-visible border-t border-[hsl(var(--sidebar-border))] py-4 transition-all duration-300 ${collapsed ? 'px-[19px]' : 'px-4'}`}
             >
                 <button
                     onClick={() =>
@@ -363,7 +359,7 @@ export default function AppSidebar() {
                     }
                     aria-label="Profile menu"
                     aria-expanded={isProfileOpen}
-                    className={`flex w-full items-center rounded-xl hover:bg-foreground/5 transition-colors group ${collapsed ? 'gap-0 p-0 cursor-default' : 'gap-3 px-2 py-2'}`}
+                    className={`group rail-item flex w-full items-center rounded-xl ${collapsed ? 'cursor-default gap-0 p-0' : 'gap-3 px-2 py-2'}`}
                 >
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary-text text-xs font-bold flex-shrink-0 border border-primary/20">
                         {initials}
@@ -381,8 +377,8 @@ export default function AppSidebar() {
 
                 {/* Dropdown Menu */}
                 {!collapsed && isProfileOpen && (
-                    <div className="absolute bottom-full left-4 right-4 mb-2 bg-background/90 backdrop-blur-xl border border-border rounded-xl shadow-lg p-2 flex flex-col gap-1 z-50">
-                        <div className="px-2 py-2 border-b border-border/50 mb-2">
+                    <div className="panel absolute bottom-full left-4 right-4 z-50 mb-2 flex flex-col gap-1 rounded-xl p-2">
+                        <div className="mb-2 border-b border-[hsl(var(--tile-border))] px-2 py-2">
                             <p className="text-xs text-muted-foreground">
                                 Logged in as
                             </p>
@@ -390,16 +386,28 @@ export default function AppSidebar() {
                                 {userEmail ?? 'Loading...'}
                             </p>
                         </div>
+                        {/* A settings menu holding exactly one setting was a
+                            sign the rest had nowhere to live. Theme is now one
+                            row inside Preferences, alongside the accent,
+                            layout and tag colours. */}
                         <button
-                            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                            className="flex items-center gap-2 px-2 py-2.5 text-sm text-foreground hover:bg-foreground/5 rounded-lg transition-colors text-left font-medium"
+                            onClick={() => {
+                                setIsProfileOpen(false);
+                                document.dispatchEvent(new CustomEvent('open-preferences'));
+                            }}
+                            className="rail-item pressable flex items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-left text-sm font-medium text-foreground"
                         >
-                            {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                            {resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}
+                            <span className="flex items-center gap-2">
+                                <SlidersHorizontal size={16} />
+                                Preferences
+                            </span>
+                            <kbd className="rounded border border-[hsl(var(--tile-border))] bg-foreground/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                ⌘,
+                            </kbd>
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="flex items-center gap-2 px-2 py-2.5 text-sm text-destructive hover:bg-destructive/10 dark:text-red-400 dark:hover:text-red-300 rounded-lg transition-colors text-left font-medium"
+                            className="pressable flex items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
                         >
                             <LogOut size={16} />
                             Log out
@@ -421,7 +429,7 @@ export default function AppSidebar() {
                     aria-label="Open menu"
                     aria-controls="mobile-nav"
                     aria-expanded={false}
-                    className="lg:hidden fixed top-3 left-3 z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-card border border-border shadow-card text-foreground"
+                    className="panel pressable fixed left-3 top-3 z-50 flex h-11 w-11 items-center justify-center rounded-xl text-foreground lg:hidden"
                 >
                     <Menu size={18} />
                 </button>
@@ -430,7 +438,11 @@ export default function AppSidebar() {
             {/* Mobile overlay */}
             {isOpen && (
                 <div
-                    className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+                    // A plain dim, not a blur. A full-viewport backdrop-filter
+                    // is re-read on every composited frame, and the drawer
+                    // slides across it — so the blur would be recomputed for
+                    // the whole 300ms of the animation, every time.
+                    className="fixed inset-0 z-40 bg-black/60 lg:hidden"
                     onClick={() => setIsOpen(false)}
                 />
             )}
@@ -448,8 +460,8 @@ export default function AppSidebar() {
                 tabIndex={-1}
                 inert={!isOpen}
                 className={`
-          lg:hidden fixed left-0 top-0 z-40 h-full w-[min(18rem,85vw)] bg-background/95 backdrop-blur-md border-r border-border/50
-          transition-transform duration-300 ease-out
+          rail fixed left-0 top-0 z-40 h-full w-[min(18rem,85vw)] border-r
+          transition-transform duration-300 ease-out lg:hidden
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
             >
@@ -472,9 +484,9 @@ export default function AppSidebar() {
                 {/* Floating expandable menu */}
                 <div
                     className={`
-                        fixed left-0 top-0 h-screen bg-background/80 backdrop-blur-md border border-border/50 border-r flex flex-col
-                        transition-all duration-300 ease-in-out z-40 overflow-hidden
-                        ${isExpanded ? 'w-64 shadow-lg' : 'w-[70px]'}
+                        rail fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r
+                        transition-[width] duration-300 ease-in-out
+                        ${isExpanded ? 'w-64 shadow-xl' : 'w-[70px]'}
                     `}
                 >
                     {renderSidebarContent(!isExpanded, {

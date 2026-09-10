@@ -1,6 +1,7 @@
 // app/notes/layout.tsx
 import AppSidebar from '@/components/app-sidebar';
 import PreferencesSync from '@/components/preferences-sync';
+import PreferencesDialog from '@/components/PreferencesDialog';
 import { createClient } from '@/lib/supabase/server';
 import CommandPalette from '@/components/CommandPalette';
 import { Suspense } from 'react';
@@ -9,7 +10,13 @@ import { Suspense } from 'react';
 async function PreferencesGate() {
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
-    return <PreferencesSync userId={data?.claims?.sub ?? null} />;
+    const userId = data?.claims?.sub ?? null;
+    return (
+        <>
+            <PreferencesSync userId={userId} />
+            <PreferencesDialog userId={userId} />
+        </>
+    );
 }
 
 export default function NotesLayout({

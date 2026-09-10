@@ -169,12 +169,61 @@ const WHITE: Rgb = { r: 255, g: 255, b: 255 };
 const BLACK: Rgb = { r: 0, g: 0, b: 0 };
 
 /**
+ * The alpha of the accent wash that accent-coloured text actually sits on.
+ *
+ * Accent text is almost never on the bare page background — it labels an active
+ * nav row, a selected filter chip, a pressed toggle, all of which tint their
+ * own surface with a low-alpha fill of the same accent. Deriving against the
+ * bare background produced a step that cleared AA by 0.1 and then failed once
+ * the wash underneath it was taken into account; axe caught exactly that on the
+ * toolbar's active tag chip.
+ *
+ * 0.15 is the strongest such wash in the app (`bg-primary/15`), so satisfying
+ * it satisfies the lighter ones too.
+ */
+export const ACCENT_WASH = 0.15;
+
+/** Composites `fg` over `bg` at the given alpha. */
+function over(fg: Rgb, bg: Rgb, alpha: number): Rgb {
+    return {
+        r: Math.round(fg.r * alpha + bg.r * (1 - alpha)),
+        g: Math.round(fg.g * alpha + bg.g * (1 - alpha)),
+        b: Math.round(fg.b * alpha + bg.b * (1 - alpha)),
+    };
+}
+
+/**
+ * Every surface accent-coloured text is printed on: the bare page, and the page
+ * under an accent wash. Text has to be readable on BOTH — which is stricter
+ * than either, and in opposite directions depending on the accent. A dark
+ * accent darkens its wash, a light one lightens it, so whichever is harder
+ * changes from colour to colour and cannot be assumed.
+ *
+ * Exported so scripts/check-accent-contrast.mjs asserts against the same set
+ * the derivation targets. Measuring one and deriving for the other is how the
+ * toolbar chip shipped at 4.4:1 while the checker reported it clear.
+ */
+export function accentTextSurfaces(accent: Rgb, theme: 'light' | 'dark'): Rgb[] {
+    const page = hslToRgb(BACKGROUND[theme]);
+    return [page, over(accent, page, ACCENT_WASH)];
+}
+
+/** The worst contrast `candidate` achieves across those surfaces. */
+export function worstOnSurfaces(candidate: Rgb, surfaces: Rgb[]): number {
+    return Math.min(...surfaces.map((s) => contrastRatio(candidate, s)));
+}
+
+/**
  * Turns one colour into the three the interface needs.
  *
  * `accentText` walks lightness away from the background one percent at a time.
  * It always converges: pushed far enough it becomes black or white, and both
  * clear AA against either background comfortably. Saturation is held so the
  * text still reads as the user's hue rather than as grey.
+ *
+ * The target it walks toward is the background WITH an accent wash over it
+ * (see ACCENT_WASH), not the bare background — that is the surface this text
+ * is actually printed on wherever it appears.
  */
 export function deriveAccentSteps(
     input: string | Rgb,
@@ -184,7 +233,7 @@ export function deriveAccentSteps(
     if (!rgb) return null;
 
     const accent = rgbToHsl(rgb);
-    const bgRgb = hslToRgb(BACKGROUND[theme]);
+    const surfaces = accentTextSurfaces(rgb, theme);
 
     const onWhite = contrastRatio(rgb, WHITE);
     const onBlack = contrastRatio(rgb, BLACK);
@@ -195,13 +244,13 @@ export function deriveAccentSteps(
     const step = theme === 'light' ? -1 : 1;
     let l = accent.l;
     let best = { ...accent };
-    let ratio = contrastRatio(rgb, bgRgb);
+    let ratio = worstOnSurfaces(rgb, surfaces);
     const startedBelow = ratio < AA_NORMAL;
 
     while (ratio < AA_NORMAL && l >= 0 && l <= 100) {
         l += step;
         const candidate = { h: accent.h, s: accent.s, l: clamp(l, 0, 100) };
-        ratio = contrastRatio(hslToRgb(candidate), bgRgb);
+        ratio = worstOnSurfaces(hslToRgb(candidate), surfaces);
         best = candidate;
     }
 

@@ -11,7 +11,7 @@ import EditNoteModal from './EditNoteModal';
 import { useToast } from '@/components/toast-provider';
 import SpatialSurface from './SpatialSurface';
 import { usePreferences } from '@/lib/use-preferences';
-import { DENSITY, tagColor, tagLabel } from '@/lib/preferences';
+import { DENSITY, tagChipColors, tagLabel } from '@/lib/preferences';
 import { updateNote } from '@/lib/notes-api';
 
 function timeAgo(dateStr: string): string {
@@ -291,11 +291,7 @@ export default function NoteCard({
                                palette unless the user overrode it; the label is
                                display-only, so the stored tag is untouched and
                                filtering still works. */
-                            style={{
-                                color: tagColor(tag, prefs),
-                                borderColor: `${tagColor(tag, prefs)}55`,
-                                backgroundColor: `${tagColor(tag, prefs)}1a`,
-                            }}
+                            style={tagChipColors(tag, prefs)}
                             className="max-w-full break-all rounded-md border px-1.5 py-0.5 text-xs font-medium"
                         >
                             {tagLabel(tag, prefs)}

@@ -44,7 +44,21 @@ const {
     contrastRatio,
     rgbToHex,
     AA_NORMAL,
+    accentTextSurfaces,
+    worstOnSurfaces,
 } = mod;
+
+/* DEFAULT_ACCENT lives in lib/preferences.ts, which is a 'use client' module
+   using the @/ path alias — importing it here would mean resolving that alias.
+   The literal is read straight out of the source instead, which also means
+   this checks the constant the app actually ships. */
+const prefsSrc = readFileSync(join(ROOT, 'lib', 'preferences.ts'), 'utf8');
+const accentMatch = prefsSrc.match(/export const DEFAULT_ACCENT\s*=\s*'(#[0-9a-fA-F]{3,8})'/);
+if (!accentMatch) {
+    console.error('  FAIL  could not read DEFAULT_ACCENT from lib/preferences.ts');
+    process.exit(1);
+}
+const DEFAULT_ACCENT = accentMatch[1];
 
 let failures = 0;
 const fail = (msg) => {
@@ -101,7 +115,11 @@ const fail = (msg) => {
             continue;
         }
         const onFill = contrastRatio(hslToRgb(fg), hslToRgb(primary));
-        const onBg = contrastRatio(hslToRgb(text), hslToRgb(bg));
+        const onBg = worstOnSurfaces(
+            hslToRgb(text),
+            accentTextSurfaces(hslToRgb(primary), theme),
+        );
+        void bg;
         if (onFill < AA_NORMAL) {
             fail(`default --primary-foreground on --primary (${theme}) is ${onFill.toFixed(2)}:1`);
         }
@@ -110,8 +128,39 @@ const fail = (msg) => {
         }
         console.log(
             `  default accent (${theme}): text-on-fill ${onFill.toFixed(2)}:1, ` +
-                `text-on-background ${onBg.toFixed(2)}:1`,
+                `text-on-worst-surface ${onBg.toFixed(2)}:1`,
         );
+
+        /* ...and they must be EXACTLY what the derivation produces for
+           DEFAULT_ACCENT.
+
+           Clearing AA is not enough. The stylesheet paints the server-rendered
+           first frame for a fresh account; the derivation paints every frame
+           after hydration. If the two disagree the accent visibly shifts on
+           load — which is the failure the whole no-flash mirror exists to
+           prevent, arriving through the one door the mirror does not cover.
+
+           They HAD drifted: the tokens were measured for hsl(212 72% 48%)
+           while DEFAULT_ACCENT was #2b7fd4, a lighter blue on which white
+           text is 4.14:1 and the derivation therefore picks BLACK. Same name,
+           two colours, opposite foregrounds. */
+        const derived = deriveAccentSteps(DEFAULT_ACCENT, theme);
+        const near = (a, b) =>
+            Math.abs(a.h - b.h) < 0.5 && Math.abs(a.s - b.s) < 0.5 && Math.abs(a.l - b.l) < 0.5;
+        const show = (c) => `${c.h} ${c.s}% ${c.l}%`;
+        for (const [name, cssValue, want] of [
+            ['--primary', primary, derived.accent],
+            ['--primary-foreground', fg, derived.accentForeground],
+            ['--primary-text', text, derived.accentText],
+        ]) {
+            if (!near(cssValue, want)) {
+                fail(
+                    `${name} (${theme}) is ${show(cssValue)} in globals.css but ` +
+                        `deriveAccentSteps(DEFAULT_ACCENT) says ${show(want)} — ` +
+                        `the default accent would shift on hydration`,
+                );
+            }
+        }
     }
 }
 
@@ -124,8 +173,6 @@ let checked = 0;
 const worst = { onFill: Infinity, onBg: Infinity, fillAt: '', bgAt: '' };
 
 for (const theme of ['light', 'dark']) {
-    const bgRgb = hslToRgb(BACKGROUND[theme]);
-
     for (const h of HUES) {
         for (const s of SATS) {
             for (const l of LIGHTS) {
@@ -155,12 +202,18 @@ for (const theme of ['light', 'dark']) {
                     worst.fillAt = `${hex} ${theme}`;
                 }
 
-                // Accent-coloured TEXT on the page.
-                const onBg = contrastRatio(hslToRgb(steps.accentText), bgRgb);
+                // Accent-coloured TEXT, on every surface it is printed on:
+                // the bare page AND the page under an accent wash. Measuring
+                // only the bare page is what let the toolbar's active tag chip
+                // ship at 4.4:1 with this check reporting it clear.
+                const onBg = worstOnSurfaces(
+                    hslToRgb(steps.accentText),
+                    accentTextSurfaces(rgb, theme),
+                );
                 if (onBg < AA_NORMAL) {
                     fail(
-                        `${hex} (${theme}) accentText on background is ${onBg.toFixed(2)}:1 ` +
-                            `(walked to L=${steps.accentText.l.toFixed(0)}%)`,
+                        `${hex} (${theme}) accentText is ${onBg.toFixed(2)}:1 on its worst ` +
+                            `surface (walked to L=${steps.accentText.l.toFixed(0)}%)`,
                     );
                 }
                 if (onBg < worst.onBg) {
@@ -188,7 +241,7 @@ console.log(
     `  tightest text-on-fill:       ${worst.onFill.toFixed(2)}:1  (${worst.fillAt})`,
 );
 console.log(
-    `  tightest text-on-background: ${worst.onBg.toFixed(2)}:1  (${worst.bgAt})`,
+    `  tightest text-on-worst-surface: ${worst.onBg.toFixed(2)}:1  (${worst.bgAt})`,
 );
 
 if (failures) {

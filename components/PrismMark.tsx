@@ -9,17 +9,26 @@
  * Gradient ids are suffixed by `idSuffix` because several marks can share a
  * page, and duplicate ids make every instance resolve to the first one's
  * gradient.
+ *
+ * Two tones. `spectrum` is the brand mark and belongs on the landing page,
+ * which is a marketing surface with its own look. `accent` is a flat fill of
+ * whatever colour the user chose, and is what the product uses: a fixed
+ * four-stop rainbow in the corner of an otherwise matte, single-accent
+ * interface is the loudest thing on screen and answers to nobody's setting.
  */
 export default function PrismMark({
     size = 32,
     className = '',
     idSuffix = 'a',
+    tone = 'spectrum',
 }: {
     size?: number;
     className?: string;
     idSuffix?: string;
+    tone?: 'spectrum' | 'accent';
 }) {
     const body = `prism-body-${idSuffix}`;
+    const fill = tone === 'accent' ? 'hsl(var(--primary))' : `url(#${body})`;
 
     return (
         <svg
@@ -30,14 +39,16 @@ export default function PrismMark({
             className={className}
             aria-hidden
         >
-            <defs>
-                <linearGradient id={body} x1="6" y1="3" x2="27" y2="28">
-                    <stop offset="0%" stopColor="hsl(var(--spectrum-blue))" />
-                    <stop offset="45%" stopColor="hsl(var(--spectrum-violet))" />
-                    <stop offset="80%" stopColor="hsl(var(--spectrum-pink))" />
-                    <stop offset="100%" stopColor="hsl(var(--spectrum-amber))" />
-                </linearGradient>
-            </defs>
+            {tone === 'spectrum' && (
+                <defs>
+                    <linearGradient id={body} x1="6" y1="3" x2="27" y2="28">
+                        <stop offset="0%" stopColor="hsl(var(--spectrum-blue))" />
+                        <stop offset="45%" stopColor="hsl(var(--spectrum-violet))" />
+                        <stop offset="80%" stopColor="hsl(var(--spectrum-pink))" />
+                        <stop offset="100%" stopColor="hsl(var(--spectrum-amber))" />
+                    </linearGradient>
+                </defs>
+            )}
 
             {/* The beam going in — the only part that takes the text colour, so
                 the mark sits in whatever context it is placed in. */}
@@ -52,7 +63,7 @@ export default function PrismMark({
             {/* The prism */}
             <path
                 d="M14.05 4.1a2.2 2.2 0 0 1 3.9 0l9.6 18.5A2.2 2.2 0 0 1 25.6 25.9H6.4a2.2 2.2 0 0 1-1.95-3.3Z"
-                fill={`url(#${body})`}
+                fill={fill}
             />
 
             {/* The split: a wedge of the triangle held back, which is what makes
