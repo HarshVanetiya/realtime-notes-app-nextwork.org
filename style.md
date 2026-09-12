@@ -108,6 +108,7 @@ content is a broken page.**
 |---|---|
 | `.glass-panel` | Translucent card with a 1px gradient stroke, drawn by masking a padding box out of a filled one (a `border-image` cannot follow a `border-radius`) |
 | `.glass-panel.is-floating` | The same, at 94% opacity — for panels that overlap other content, where 62% let the text collide with what was underneath |
+| `.spatial-panel` | Apple Vision-inspired translucent overlay. `backdrop-filter: blur(40px) saturate(1.4)` on a semi-opaque fill (78% light / 68% dark), with the tile system's hairline border, lit top-edge, and lifted shadow. Acceptable on small, fixed-size overlays (bookmarks, preferences, command palette). **Never on full-screen or animated surfaces.** |
 | `.btn-spectrum` | The primary action. Gradient pans on hover, lifts 1px, settles on press |
 | `.bg-spectrum-soft` | A hover bloom for cards — opacity only, so it composites |
 | `.dot-field` | Depth, masked to fade from the centre so it reads as atmosphere rather than wallpaper |

@@ -189,7 +189,7 @@ export default function CommandPalette() {
                 onOpenChange={setOpen}
                 label="Command palette"
                 shouldFilter
-                className="fixed left-1/2 top-[15%] z-[80] w-[min(92vw,640px)] -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-popover shadow-xl"
+                className="spatial-panel fixed left-1/2 top-[15%] z-[80] w-[min(92vw,640px)] -translate-x-1/2 overflow-hidden shadow-xl"
             >
                 <div className="flex items-center gap-3 border-b border-border/60 px-4">
                     <Search size={17} className="flex-shrink-0 text-muted-foreground" />

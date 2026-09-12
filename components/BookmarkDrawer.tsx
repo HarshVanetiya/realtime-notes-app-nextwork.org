@@ -3,6 +3,7 @@
 import {
     useCallback,
     useEffect,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -540,186 +541,211 @@ export default function BookmarkDrawer({ userId }: { userId: string | null }) {
           ? currentFolder.name
           : 'Bookmarks';
 
+    /* ----- Exit animation lifecycle -----
+       `open` is the external truth; `closing` lets us play the exit animation
+       before actually unmounting the panel. The panel stays mounted while
+       `mounted` is true (either open or mid-exit). */
+    const [closing, setClosing] = useState(false);
+    const mounted = open || closing;
+
+    // When `open` goes false, start the exit animation instead of instant hide.
+    useLayoutEffect(() => {
+        if (!open && sheetRef.current) {
+            setClosing(true);
+        }
+    }, [open]);
+
+    const onAnimationEnd = useCallback(() => {
+        if (closing) setClosing(false);
+    }, [closing]);
+
     return (
         <>
-            {/* Click-outside target. Transparent on desktop so the note behind
-                stays visible; the sheet itself carries the surface. */}
-            {open && (
+            {/* Click-outside scrim. Semi-transparent so content behind stays
+                partially visible through the spatial panel's translucency. */}
+            {mounted && (
                 <button
                     type="button"
                     aria-label="Close bookmarks"
                     onClick={close}
-                    className="fixed inset-0 z-[45] cursor-default bg-black/40 lg:bg-transparent"
+                    className={`
+                        fixed inset-0 z-[45] cursor-default
+                        transition-opacity duration-300
+                        ${closing ? 'bg-transparent' : 'bg-black/40'}
+                    `}
                 />
             )}
 
-            <aside
-                ref={sheetRef}
-                role="dialog"
-                aria-modal="true"
-                aria-label="Bookmarks"
-                aria-hidden={!open}
-                inert={!open}
-                className={`
-                    panel fixed top-0 z-[46] flex h-[100dvh] flex-col overflow-hidden rounded-none border-y-0 border-l-0
-                    inset-x-0 lg:inset-x-auto lg:left-[70px] lg:w-[380px]
-                    transition-transform duration-300 ease-out
-                    ${open ? 'translate-x-0' : '-translate-x-full lg:-translate-x-[calc(100%+70px)]'}
-                `}
-            >
-                {/* Header */}
-                <div className="flex flex-shrink-0 items-center gap-2 border-b border-[hsl(var(--sidebar-border))] px-3 py-3">
-                    {currentFolder || term ? (
+            {mounted && (
+                <aside
+                    ref={sheetRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Bookmarks"
+                    onAnimationEnd={onAnimationEnd}
+                    className={`
+                        spatial-panel fixed z-[46] flex flex-col overflow-hidden
+                        w-[calc(100%-2rem)] sm:max-w-[min(72vw,860px)]
+                        max-h-[min(80dvh,640px)]
+                        left-1/2 bottom-6
+                        ${closing ? 'spatial-exit' : 'spatial-enter'}
+                    `}
+                >
+                    {/* Header */}
+                    <div className="flex flex-shrink-0 items-center gap-2 border-b border-[hsl(var(--tile-border)/0.5)] px-4 py-3">
+                        {currentFolder || term ? (
+                            <button
+                                type="button"
+                                onClick={() => (term ? setQuery('') : setFolderId(null))}
+                                aria-label="Back"
+                                className="pressable flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+                            >
+                                <ArrowLeft size={18} />
+                            </button>
+                        ) : (
+                            <span className="flex h-9 w-9 items-center justify-center text-primary-text">
+                                <BookmarkIcon size={18} />
+                            </span>
+                        )}
+                        <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">
+                            {heading}
+                        </h2>
                         <button
                             type="button"
-                            onClick={() => (term ? setQuery('') : setFolderId(null))}
-                            aria-label="Back"
+                            onClick={() => setPrompt({ kind: 'add-bookmark' })}
+                            aria-label="Add bookmark"
+                            title="Add bookmark"
                             className="pressable flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
                         >
-                            <ArrowLeft size={18} />
+                            <Plus size={18} />
                         </button>
-                    ) : (
-                        <span className="flex h-9 w-9 items-center justify-center text-primary-text">
-                            <BookmarkIcon size={18} />
-                        </span>
-                    )}
-                    <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">
-                        {heading}
-                    </h2>
-                    <button
-                        type="button"
-                        onClick={() => setPrompt({ kind: 'add-bookmark' })}
-                        aria-label="Add bookmark"
-                        title="Add bookmark"
-                        className="pressable flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-                    >
-                        <Plus size={18} />
-                    </button>
-                    {!currentFolder && (
+                        {!currentFolder && (
+                            <button
+                                type="button"
+                                onClick={() => setPrompt({ kind: 'add-folder' })}
+                                aria-label="New folder"
+                                title="New folder"
+                                className="pressable flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+                            >
+                                <FolderPlus size={18} />
+                            </button>
+                        )}
                         <button
                             type="button"
-                            onClick={() => setPrompt({ kind: 'add-folder' })}
-                            aria-label="New folder"
-                            title="New folder"
+                            onClick={close}
+                            aria-label="Close"
                             className="pressable flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
                         >
-                            <FolderPlus size={18} />
+                            <X size={18} />
                         </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={close}
-                        aria-label="Close"
-                        className="pressable flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-                    >
-                        <X size={18} />
-                    </button>
-                </div>
-
-                {/* Search */}
-                <div className="flex-shrink-0 px-3 pt-3">
-                    <div className="relative">
-                        <Search
-                            size={15}
-                            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                        />
-                        <Input
-                            ref={searchRef}
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search bookmarks"
-                            aria-label="Search bookmarks"
-                            className="pl-9"
-                        />
                     </div>
-                </div>
 
-                {/* Grid */}
-                <div className="scrollbar-thin flex-1 overflow-y-auto px-2 py-3">
-                    {status === 'loading' && (
-                        <div className="grid grid-cols-4 gap-1">
-                            {Array.from({ length: 8 }).map((_, i) => (
-                                <div key={i} className="flex flex-col items-center gap-1.5 p-2">
-                                    <div className="h-14 w-14 animate-pulse rounded-[18px] bg-foreground/[0.06]" />
-                                    <div className="h-2.5 w-12 animate-pulse rounded bg-foreground/[0.06]" />
-                                </div>
-                            ))}
+                    {/* Search */}
+                    <div className="flex-shrink-0 px-4 pt-3">
+                        <div className="relative">
+                            <Search
+                                size={15}
+                                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                ref={searchRef}
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search bookmarks"
+                                aria-label="Search bookmarks"
+                                className="pl-9"
+                            />
                         </div>
-                    )}
+                    </div>
 
-                    {status === 'error' && (
-                        <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
-                            <p className="text-sm text-muted-foreground">{error ?? 'Could not load bookmarks.'}</p>
-                            <Button variant="outline" size="sm" onClick={reload}>
-                                Try again
-                            </Button>
-                        </div>
-                    )}
+                    {/* Grid */}
+                    <div className="scrollbar-thin flex-1 overflow-y-auto px-3 py-3">
+                        {status === 'loading' && (
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1">
+                                {Array.from({ length: 12 }).map((_, i) => (
+                                    <div key={i} className="flex flex-col items-center gap-1.5 p-2">
+                                        <div className="h-14 w-14 animate-pulse rounded-[18px] bg-foreground/[0.06]" />
+                                        <div className="h-2.5 w-12 animate-pulse rounded bg-foreground/[0.06]" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
-                    {status === 'ready' && visibleFolders.length === 0 && visibleBookmarks.length === 0 && (
-                        <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-                            <BookmarkIcon size={28} className="text-muted-foreground/60" />
-                            <p className="text-sm font-medium text-foreground">
-                                {term ? 'Nothing matches' : currentFolder ? 'This folder is empty' : 'No bookmarks yet'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                {term
-                                    ? 'Try a different word, or part of the address.'
-                                    : 'Use + above, or click the extension on any page.'}
-                            </p>
-                        </div>
-                    )}
+                        {status === 'error' && (
+                            <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+                                <p className="text-sm text-muted-foreground">{error ?? 'Could not load bookmarks.'}</p>
+                                <Button variant="outline" size="sm" onClick={reload}>
+                                    Try again
+                                </Button>
+                            </div>
+                        )}
 
-                    {status === 'ready' && (
-                        <div className="grid grid-cols-4 gap-1">
-                            {visibleFolders.map((f) => {
-                                const inside = bookmarks.filter((b) => b.folder_id === f.id);
-                                return (
-                                    <FolderTile
-                                        key={f.id}
-                                        folder={f}
-                                        preview={inside}
-                                        count={inside.length}
-                                        onOpen={() => {
-                                            setQuery('');
-                                            setFolderId(f.id);
+                        {status === 'ready' && visibleFolders.length === 0 && visibleBookmarks.length === 0 && (
+                            <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+                                <BookmarkIcon size={28} className="text-muted-foreground/60" />
+                                <p className="text-sm font-medium text-foreground">
+                                    {term ? 'Nothing matches' : currentFolder ? 'This folder is empty' : 'No bookmarks yet'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {term
+                                        ? 'Try a different word, or part of the address.'
+                                        : 'Use + above, or click the extension on any page.'}
+                                </p>
+                            </div>
+                        )}
+
+                        {status === 'ready' && (
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1">
+                                {visibleFolders.map((f) => {
+                                    const inside = bookmarks.filter((b) => b.folder_id === f.id);
+                                    return (
+                                        <FolderTile
+                                            key={f.id}
+                                            folder={f}
+                                            preview={inside}
+                                            count={inside.length}
+                                            onOpen={() => {
+                                                setQuery('');
+                                                setFolderId(f.id);
+                                            }}
+                                            onRename={() => setPrompt({ kind: 'rename-folder', folder: f })}
+                                            onDelete={async () => {
+                                                const r = await deleteFolder(supabase, f.id);
+                                                report(r.error, `Deleted "${f.name}" — its bookmarks moved to the top level`);
+                                            }}
+                                        />
+                                    );
+                                })}
+                                {visibleBookmarks.map((b) => (
+                                    <BookmarkTile
+                                        key={b.id}
+                                        bookmark={b}
+                                        folders={folders}
+                                        onRename={() => setPrompt({ kind: 'rename-bookmark', bookmark: b })}
+                                        onMove={async (target) => {
+                                            const r = await moveBookmark(supabase, b.id, target);
+                                            report(r.error);
                                         }}
-                                        onRename={() => setPrompt({ kind: 'rename-folder', folder: f })}
                                         onDelete={async () => {
-                                            const r = await deleteFolder(supabase, f.id);
-                                            report(r.error, `Deleted “${f.name}” — its bookmarks moved to the top level`);
+                                            const r = await deleteBookmark(supabase, b.id);
+                                            report(r.error, 'Bookmark deleted');
                                         }}
                                     />
-                                );
-                            })}
-                            {visibleBookmarks.map((b) => (
-                                <BookmarkTile
-                                    key={b.id}
-                                    bookmark={b}
-                                    folders={folders}
-                                    onRename={() => setPrompt({ kind: 'rename-bookmark', bookmark: b })}
-                                    onMove={async (target) => {
-                                        const r = await moveBookmark(supabase, b.id, target);
-                                        report(r.error);
-                                    }}
-                                    onDelete={async () => {
-                                        const r = await deleteBookmark(supabase, b.id);
-                                        report(r.error, 'Bookmark deleted');
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
-                <div className="flex-shrink-0 border-t border-[hsl(var(--sidebar-border))] px-4 py-2 text-[11px] text-muted-foreground">
-                    Right-click or long-press a tile for actions ·{' '}
-                    <kbd className="rounded border border-[hsl(var(--tile-border))] bg-foreground/5 px-1 py-px">⌘B</kbd>{' '}
-                    toggles
-                </div>
-            </aside>
+                    <div className="flex-shrink-0 border-t border-[hsl(var(--tile-border)/0.5)] px-4 py-2 text-[11px] text-muted-foreground">
+                        Right-click or long-press a tile for actions ·{' '}
+                        <kbd className="rounded border border-[hsl(var(--tile-border))] bg-foreground/5 px-1 py-px">⌘B</kbd>{' '}
+                        toggles
+                    </div>
+                </aside>
+            )}
 
             <PromptDialog prompt={prompt} onClose={() => setPrompt(null)} onSubmit={handlePrompt} />
         </>
     );
 }
+

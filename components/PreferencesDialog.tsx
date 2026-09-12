@@ -110,7 +110,7 @@ export default function PreferencesDialog({ userId }: { userId: string | null })
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
-                className="w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[min(72vw,860px)]"
+                className="spatial-panel w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[min(72vw,860px)]"
                 showCloseButton
             >
                 <DialogTitle className="border-b border-border px-5 py-4 text-base font-semibold">

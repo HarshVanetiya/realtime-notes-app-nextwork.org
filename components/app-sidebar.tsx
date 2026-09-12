@@ -387,7 +387,7 @@ export default function AppSidebar() {
 
                 {/* Dropdown Menu */}
                 {!collapsed && isProfileOpen && (
-                    <div className="panel absolute bottom-full left-4 right-4 z-50 mb-2 flex flex-col gap-1 rounded-xl p-2">
+                    <div className="spatial-panel absolute bottom-full left-4 right-4 z-50 mb-2 flex flex-col gap-1 rounded-xl p-2">
                         <div className="mb-2 border-b border-[hsl(var(--tile-border))] px-2 py-2">
                             <p className="text-xs text-muted-foreground">
                                 Logged in as

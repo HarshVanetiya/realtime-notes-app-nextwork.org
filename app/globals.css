@@ -894,3 +894,104 @@
         transform: none !important;
     }
 }
+
+/* ============================================================================
+   SPATIAL PANELS — Apple Vision-inspired translucent surfaces
+   ============================================================================
+
+   Minimal glassmorphism for small overlay panels (bookmarks, preferences,
+   command palette). backdrop-filter is acceptable here because these are
+   compact, fixed-size elements — never full-screen or animated blurs.
+
+   Layers:
+     1. Semi-opaque fill for readability
+     2. Subtle blur + saturation boost to pick up environmental colour
+     3. Hairline border from the spatial tile system
+     4. Lit top-edge highlight + lifted shadow for depth
+     5. Thin inner glow for perceived thickness
+   ========================================================================= */
+
+.spatial-panel {
+    background: hsl(var(--popover) / 0.78);
+    backdrop-filter: blur(40px) saturate(1.4);
+    -webkit-backdrop-filter: blur(40px) saturate(1.4);
+    border: 1px solid hsl(var(--tile-border));
+    border-radius: 1.5rem;
+    box-shadow:
+        inset 0 1px 0 0 hsl(var(--tile-highlight)),
+        inset 0 0 0 0.5px hsl(0 0% 100% / 0.08),
+        var(--tile-shadow-lifted);
+}
+
+/* Dark mode: slightly more transparent to let more environment through,
+   and soften the inner glow so it doesn't bloom on dark surfaces. */
+.dark .spatial-panel {
+    background: hsl(var(--popover) / 0.68);
+    box-shadow:
+        inset 0 1px 0 0 hsl(var(--tile-highlight)),
+        inset 0 0 0 0.5px hsl(0 0% 100% / 0.05),
+        var(--tile-shadow-lifted);
+}
+
+/* ---------------------------------------------------------------------------
+   Dynamic Island-inspired pop-up / pop-down keyframes.
+   Only animate transform + opacity (compositor-friendly).
+   The panel scales up from a compressed pill shape at the bottom center,
+   overshoots slightly, then settles — exactly how Dynamic Island expands.
+   --------------------------------------------------------------------------- */
+
+@keyframes spatial-pop-up {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px) scaleX(0.85) scaleY(0.6);
+    }
+    60% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-8px) scaleX(1.02) scaleY(1.02);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scaleX(1) scaleY(1);
+    }
+}
+
+@keyframes spatial-pop-down {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scaleX(1) scaleY(1);
+    }
+    40% {
+        opacity: 0.8;
+        transform: translateX(-50%) translateY(-4px) scaleX(1.01) scaleY(1.01);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px) scaleX(0.85) scaleY(0.6);
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Utility classes — drop onto any element positioned at left-50%/bottom-N
+   to trigger the Dynamic Island-style animation.
+   --------------------------------------------------------------------------- */
+
+.spatial-enter {
+    animation: spatial-pop-up 420ms var(--ease-spring) both;
+    transform-origin: bottom center;
+}
+
+.spatial-exit {
+    animation: spatial-pop-down 280ms var(--ease-exit) both;
+    transform-origin: bottom center;
+}
+
+/* Respect user preference: kill the animation entirely rather than
+   speeding it up (a 1ms elastic pop is a jarring flash). */
+@media (prefers-reduced-motion: reduce) {
+    .spatial-enter,
+    .spatial-exit {
+        animation: none !important;
+        opacity: 1;
+        transform: translateX(-50%);
+    }
+}
