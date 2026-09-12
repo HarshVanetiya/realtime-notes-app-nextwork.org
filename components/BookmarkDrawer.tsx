@@ -570,8 +570,8 @@ export default function BookmarkDrawer({ userId }: { userId: string | null }) {
                     onClick={close}
                     className={`
                         fixed inset-0 z-[45] cursor-default
-                        transition-opacity duration-300
-                        ${closing ? 'bg-transparent' : 'bg-black/40'}
+                        transition-all duration-300
+                        ${closing ? 'bg-transparent backdrop-blur-none' : 'bg-black/30 backdrop-blur-md'}
                     `}
                 />
             )}
