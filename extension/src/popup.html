@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Prism Bookmarks</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f8;
+      --panel: #ffffff;
+      --fg: #111214;
+      --muted: #6b6f76;
+      --border: rgba(17, 18, 20, 0.10);
+      --accent: #6366f1;
+      --accent-fg: #ffffff;
+      --danger: #dc2626;
+      --ok: #16a34a;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141517;
+        --panel: #1c1d20;
+        --fg: #ececef;
+        --muted: #9a9ea6;
+        --border: rgba(255, 255, 255, 0.09);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      width: 300px;
+      font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+    }
+    header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+    }
+    header img { width: 24px; height: 24px; border-radius: 7px; }
+    header h1 { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+    main { padding: 14px; display: grid; gap: 10px; }
+    label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+    input {
+      width: 100%; padding: 8px 10px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--panel); color: var(--fg);
+      font: inherit; outline: none;
+    }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+    button {
+      width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid transparent;
+      font: inherit; font-weight: 600; cursor: pointer;
+      background: var(--accent); color: var(--accent-fg);
+    }
+    button.secondary { background: var(--panel); color: var(--fg); border-color: var(--border); }
+    button:disabled { opacity: 0.6; cursor: default; }
+    .row { display: flex; gap: 8px; }
+    .status { min-height: 18px; font-size: 12px; color: var(--muted); }
+    .status[data-tone="error"] { color: var(--danger); }
+    .status[data-tone="ok"] { color: var(--ok); }
+    .who { font-size: 12px; color: var(--muted); }
+    .who strong { color: var(--fg); font-weight: 600; word-break: break-all; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon48.png" alt="" />
+    <h1>Prism Bookmarks</h1>
+  </header>
+
+  <main>
+    <section id="loading">
+      <p class="status">Checking sign-in…</p>
+    </section>
+
+    <form id="signin" hidden autocomplete="on">
+      <label>Email
+        <input id="email" type="email" name="email" autocomplete="username" required />
+      </label>
+      <label>Password
+        <input id="password" type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <button id="signin-btn" type="submit">Sign in</button>
+      <p id="signin-status" class="status" role="status"></p>
+      <p class="status">Use the same account as the Prism notes app.</p>
+    </form>
+
+    <section id="signedin" hidden>
+      <p class="who">Signed in as <strong id="who"></strong></p>
+      <button id="save-btn" type="button">Save this page</button>
+      <button id="signout-btn" type="button" class="secondary">Sign out</button>
+      <p id="signedin-status" class="status" role="status"></p>
+      <p class="status">Tip: once signed in, the toolbar button saves the page directly — no popup.</p>
+    </section>
+  </main>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

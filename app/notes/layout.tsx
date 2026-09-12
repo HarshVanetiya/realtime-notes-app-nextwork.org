@@ -2,6 +2,7 @@
 import AppSidebar from '@/components/app-sidebar';
 import PreferencesSync from '@/components/preferences-sync';
 import PreferencesDialog from '@/components/PreferencesDialog';
+import BookmarkDrawer from '@/components/BookmarkDrawer';
 import { createClient } from '@/lib/supabase/server';
 import CommandPalette from '@/components/CommandPalette';
 import { Suspense } from 'react';
@@ -15,6 +16,7 @@ async function PreferencesGate() {
         <>
             <PreferencesSync userId={userId} />
             <PreferencesDialog userId={userId} />
+            <BookmarkDrawer userId={userId} />
         </>
     );
 }

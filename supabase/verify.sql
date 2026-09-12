@@ -200,6 +200,51 @@ with checks as (
            (select bool_and(convalidated) from pg_constraint
             where conrelid = 'public.notes'::regclass
               and conname in ('notes_title_length','notes_tags_count','notes_tag_shape'))
+    union all
+    select 'bookmark_folders table exists (0011)',
+           exists (select 1 from information_schema.tables
+                   where table_schema = 'public' and table_name = 'bookmark_folders')
+    union all
+    select 'bookmarks table exists (0011)',
+           exists (select 1 from information_schema.tables
+                   where table_schema = 'public' and table_name = 'bookmarks')
+    union all
+    select 'RLS enabled on both bookmark tables (0011)',
+           (select bool_and(relrowsecurity) from pg_class
+            where oid in ('public.bookmark_folders'::regclass, 'public.bookmarks'::regclass))
+    union all
+    select 'four RLS policies on each bookmark table (0011)',
+           (select count(*) from pg_policies
+            where schemaname = 'public' and tablename = 'bookmark_folders') >= 4
+           and
+           (select count(*) from pg_policies
+            where schemaname = 'public' and tablename = 'bookmarks') >= 4
+    union all
+    select 'one bookmark per URL per user (0011)',
+           exists (select 1 from pg_indexes
+                   where schemaname = 'public' and tablename = 'bookmarks'
+                     and indexname = 'bookmarks_user_url_key' and indexdef like 'CREATE UNIQUE%')
+    union all
+    select 'bookmark constraints present and VALIDATED (0011)',
+           (select count(*) filter (where convalidated) = 5 from pg_constraint
+            where conname in ('bookmark_folders_name_length','bookmarks_title_length',
+                              'bookmarks_url_shape','bookmarks_favicon_shape',
+                              'bookmarks_folder_same_owner'))
+    union all
+    select 'deleting a folder keeps its bookmarks (ON DELETE SET NULL) (0011)',
+           exists (select 1 from pg_constraint
+                   where conrelid = 'public.bookmarks'::regclass
+                     and contype = 'f' and confdeltype = 'n'
+                     and confrelid = 'public.bookmark_folders'::regclass)
+    union all
+    select 'both bookmark tables in realtime publication (0011)',
+           (select count(*) from pg_publication_tables
+            where pubname = 'supabase_realtime' and schemaname = 'public'
+              and tablename in ('bookmark_folders','bookmarks')) = 2
+    union all
+    select 'both bookmark tables replica identity FULL (0011)',
+           (select bool_and(relreplident = 'f') from pg_class
+            where oid in ('public.bookmark_folders'::regclass, 'public.bookmarks'::regclass))
 )
 select case when ok then 'PASS' else 'FAIL' end as result, check_name
 from checks

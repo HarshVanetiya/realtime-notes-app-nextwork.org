@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import {
+    Bookmark,
     BookOpen,
     FilePlus,
     Search,
@@ -45,6 +46,14 @@ const navItems = [
         icon: Star,
         exact: false,
         isFavorites: true,
+    },
+    {
+        href: '#',
+        action: 'bookmarks',
+        label: 'Bookmarks',
+        icon: Bookmark,
+        exact: false,
+        shortcut: '⌘B',
     },
     { href: '/notes/trash', label: 'Trash', icon: Trash2, exact: true },
     {
@@ -230,16 +239,17 @@ export default function AppSidebar() {
                 `;
                 const itemProps = { className: itemClassName, 'data-active': active };
 
-                if (item.action === 'search') {
+                if (item.action === 'search' || item.action === 'bookmarks') {
+                    const eventName =
+                        item.action === 'search' ? 'open-command-palette' : 'open-bookmarks';
                     return (
                         <button
                             key={item.label}
                             {...itemProps}
                             onClick={() => {
                                 setIsOpen(false);
-                                document.dispatchEvent(
-                                    new CustomEvent('open-command-palette'),
-                                );
+                                setIsHovered(false);
+                                document.dispatchEvent(new CustomEvent(eventName));
                             }}
                         >
                             {itemContent}

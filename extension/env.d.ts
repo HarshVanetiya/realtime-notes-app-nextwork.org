@@ -1,0 +1,3 @@
+// Injected by build.mjs via esbuild `define`.
+declare const __SUPABASE_URL__: string;
+declare const __SUPABASE_KEY__: string;

@@ -32,8 +32,9 @@ against a populated database is safe and changes nothing.
 | `0008_full_text_search.sql` | `search_vector` + GIN, the sort/paging indexes, and `search_notes()` / `count_notes()` / `note_tags()` |
 | `0009_constraints.sql` | Title length and tag limits, enforced by the database rather than only by the form |
 | `0010_user_preferences.sql` | Per-account accent, theme, layout density, tag colours and tag labels |
+| `0011_bookmarks.sql` | `bookmark_folders` + `bookmarks` behind the bookmark drawer and the browser extension: RLS, URL/length checks, one-row-per-URL, realtime |
 
-`verify.sql` is read-only and checks all of the above landed — 30 checks. It asserts
+`verify.sql` is read-only and checks all of the above landed — 39 checks. It asserts
 *properties* rather than counting objects, which it did not always do: three earlier
 versions reported FAIL on a perfectly healthy project, once by counting policies and twice
 by assuming grants that Supabase sets by design. A check that cries wolf is worse than no
@@ -151,6 +152,23 @@ public.user_preferences
   user_id      uuid         primary key → auth.users(id) on delete cascade
   prefs        jsonb        not null, default '{}' — appearance and layout, capped at 16 KB
   updated_at   timestamptz  not null, maintained by the 0005 trigger
+
+public.bookmark_folders
+  id           uuid         primary key, default gen_random_uuid()
+  user_id      uuid         not null → auth.users(id) on delete cascade
+  name         text         not null, 1–60 chars
+  position     integer      not null, default 0
+  created_at / updated_at   timestamptz, updated_at maintained by the 0005 trigger
+
+public.bookmarks
+  id           uuid         primary key, default gen_random_uuid()
+  user_id      uuid         not null → auth.users(id) on delete cascade
+  folder_id    uuid         → bookmark_folders(id) on delete SET NULL; null = top level
+  title        text         not null, 1–200 chars
+  url          text         not null, http(s) only, ≤ 2048 chars, unique per user
+  favicon_url  text         optional, http(s) only
+  position     integer      not null, default 0
+  created_at / updated_at   timestamptz, updated_at maintained by the 0005 trigger
 
 storage bucket `note-images`, public read, objects at `<user_id>/<filename>`
 ```

@@ -14,6 +14,7 @@ const GROUPS: { heading: string; items: [string, string[]][] }[] = [
         items: [
             ['Open the command palette', ['⌘', 'K']],
             ['New note', ['⌘', 'N']],
+            ['Open the bookmark drawer', ['⌘', 'B']],
             ['This dialog', ['?']],
             ['Close a dialog or palette', ['Esc']],
         ],
