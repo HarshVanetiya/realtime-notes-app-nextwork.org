@@ -4,6 +4,8 @@ Saves the current page, or any link on a page, into the bookmark drawer of the
 Prism notes app. Writes go straight to Supabase under the same account and RLS
 the app uses, so a save here appears in an open drawer immediately.
 
+See [SETUP.md](SETUP.md) for the full walkthrough — the database step, loading in Chrome, and how to distribute it.
+
 ## Build
 
 ```sh
