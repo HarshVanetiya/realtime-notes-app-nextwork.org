@@ -17,7 +17,8 @@ import NoteToolbar from './NoteToolbar';
 import SyncStatusBanner from './SyncStatusBanner';
 import { useToast } from '@/components/toast-provider';
 import NoteCard from './NoteCard';
-import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle } from 'lucide-react';
+import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle, Sparkles } from 'lucide-react';
+import { triggerHaptic } from '@/lib/haptics';
 import CreateNoteModal from './CreateNoteModal';
 import NotesGridSkeleton from './NotesGridSkeleton';
 import FirstRunPanel from './FirstRunPanel';
@@ -144,6 +145,25 @@ export default function NotesList({
         }
         setShowFirstRun(!hasDismissedOnboarding());
     }, [notes.length, isFiltered]);
+
+    // Mobile gesture tips banner state
+    const [showGestureTips, setShowGestureTips] = useState(false);
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const dismissed = localStorage.getItem('prism:gesture-tips-dismissed');
+            if (!dismissed) {
+                setShowGestureTips(true);
+            }
+        }
+    }, []);
+
+    const dismissGestureTips = () => {
+        triggerHaptic('light');
+        setShowGestureTips(false);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('prism:gesture-tips-dismissed', '1');
+        }
+    };
 
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const supabase = createClient();
@@ -837,6 +857,31 @@ export default function NotesList({
                 className="mx-auto w-full animate-fade-in"
                 style={{ maxWidth: 'var(--grid-max-w)' }}
             >
+                {/* Mobile gesture discovery tip */}
+                {showGestureTips && notesWithPending.length > 0 && (
+                    <div
+                        role="region"
+                        aria-label="Mobile gestures tips"
+                        className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-foreground backdrop-blur-sm animate-fade-in"
+                    >
+                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
+                            <Sparkles size={14} className="flex-shrink-0 text-amber-400" />
+                            <span className="font-semibold text-primary-text flex-shrink-0">Gestures:</span>
+                            <span className="text-muted-foreground flex-shrink-0">
+                                Double-tap to star • Swipe left to delete • Long-press for menu
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={dismissGestureTips}
+                            aria-label="Dismiss gesture tips"
+                            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/10 hover:text-foreground transition-colors"
+                        >
+                            <X size={13} />
+                        </button>
+                    </div>
+                )}
+
                 {notesWithPending.length > 0 && (
                     <NoteToolbar
                         tags={availableTags}
@@ -853,12 +898,6 @@ export default function NotesList({
             <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-[calc(env(safe-area-inset-bottom)+2rem)]">
                 <div className="pointer-events-auto flex max-w-full items-center gap-3 sm:gap-4 animate-in slide-in-from-bottom-12 duration-700 fade-in ease-out-back">
                     {/* Search Capsule (Island 1) */}
-                    {/* The capsule is a panel, not a blurred pane. It sits over
-                        the scrolling grid, so a backdrop-filter here meant
-                        re-reading everything behind it on every scroll frame —
-                        the most expensive possible place to put one. The
-                        sweeping gradient "shine" went with it: an animated
-                        gradient is the gloss the matte base rules out. */}
                     <div className="panel group relative flex h-14 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-full px-4 transition-[border-color,box-shadow] duration-base ease-standard focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30 hover:border-primary/40 sm:max-w-[380px] sm:gap-3 sm:px-6 md:max-w-[460px]">
                         <Search
                             size={20}
@@ -875,7 +914,10 @@ export default function NotesList({
                         {query && (
                             <button
                                 type="button"
-                                onClick={() => setQuery('')}
+                                onClick={() => {
+                                    triggerHaptic('light');
+                                    setQuery('');
+                                }}
                                 aria-label="Clear search"
                                 className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
                             >
@@ -887,13 +929,9 @@ export default function NotesList({
                     {/* Create Note Button (Island 2) */}
                     <CreateNoteModal>
                         <button
+                            onClick={() => triggerHaptic('light')}
                             aria-label="Create note"
-                            // `hover:` with nothing after it was a dangling
-                            // class Tailwind silently dropped. The blurred
-                            // inner glow is gone too — .btn-accent already
-                            // brightens on hover, without a filter on a layer
-                            // that is also being scaled.
-                            className="btn-accent group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg"
+                            className="btn-accent group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg transition-transform active:scale-95"
                         >
                             <Plus
                                 size={26}

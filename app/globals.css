@@ -852,6 +852,30 @@
         opacity: 1;
     }
 
+    /* ---- Luminous edge spotlight ---------------------------------------
+       Tracks pointer coordinates around the border rim without triggering
+       re-layout or paints. Masked so only the 1.5px hairline stroke glows. */
+    .edge-glow {
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity var(--duration-base) var(--ease-standard);
+        background: radial-gradient(
+            circle 16rem at var(--mx, 50%) var(--my, 50%),
+            hsl(var(--primary) / 0.55),
+            transparent 65%
+        );
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        padding: 1.5px;
+    }
+    .group:hover > .edge-glow {
+        opacity: 1;
+    }
+
     /* ---- The press ripple ----------------------------------------------
        One span, positioned at the exact point pressed, scaled up and faded
        out. Removed on animationend by the component — leaving them to
@@ -880,11 +904,44 @@
     to   { transform: scale(1); opacity: 0; }
 }
 
+/* Double-tap star pop & celebratory burst */
+@keyframes star-pop {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-24deg);
+        opacity: 0;
+    }
+    40% {
+        transform: translate(-50%, -50%) scale(1.35) rotate(12deg);
+        opacity: 1;
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1.08) rotate(0deg);
+        opacity: 0.95;
+    }
+    100% {
+        transform: translate(-50%, -85%) scale(0.92) rotate(4deg);
+        opacity: 0;
+    }
+}
+
+@keyframes spark-burst {
+    0% {
+        transform: translate(-50%, -50%) scale(0.4);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(1.1);
+        opacity: 0;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    /* Both of these are pure decoration. Off entirely rather than sped up:
-       a 0.01ms ripple is a flash, which is worse than none. */
+    /* Pure decoration. Off entirely rather than sped up. */
     .glare,
-    .ripple {
+    .edge-glow,
+    .ripple,
+    .star-pop-anim,
+    .spark-burst-anim {
         display: none !important;
     }
     .tile-interactive:hover {

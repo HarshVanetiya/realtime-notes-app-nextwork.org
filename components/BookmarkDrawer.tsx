@@ -23,6 +23,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
+import { triggerHaptic } from '@/lib/haptics';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/toast-provider';
 import { useBookmarks } from '@/lib/use-bookmarks';
@@ -559,6 +560,31 @@ export default function BookmarkDrawer({ userId }: { userId: string | null }) {
         if (closing) setClosing(false);
     }, [closing]);
 
+    // Touch swipe down gesture to dismiss panel on mobile
+    const [dragY, setDragY] = useState(0);
+    const dragStartY = useRef<number | null>(null);
+
+    const onDrawerTouchStart = (e: React.TouchEvent) => {
+        dragStartY.current = e.touches[0].clientY;
+    };
+
+    const onDrawerTouchMove = (e: React.TouchEvent) => {
+        if (dragStartY.current === null) return;
+        const dy = e.touches[0].clientY - dragStartY.current;
+        if (dy > 0) {
+            setDragY(dy);
+        }
+    };
+
+    const onDrawerTouchEnd = () => {
+        if (dragY > 70) {
+            triggerHaptic('light');
+            close();
+        }
+        setDragY(0);
+        dragStartY.current = null;
+    };
+
     return (
         <>
             {/* Click-outside scrim. Semi-transparent so content behind stays
@@ -583,6 +609,15 @@ export default function BookmarkDrawer({ userId }: { userId: string | null }) {
                     aria-modal="true"
                     aria-label="Bookmarks"
                     onAnimationEnd={onAnimationEnd}
+                    onTouchStart={onDrawerTouchStart}
+                    onTouchMove={onDrawerTouchMove}
+                    onTouchEnd={onDrawerTouchEnd}
+                    style={{
+                        transform:
+                            dragY > 0
+                                ? `translateX(-50%) translateY(${dragY}px)`
+                                : undefined,
+                    }}
                     className={`
                         spatial-panel fixed z-[46] flex flex-col overflow-hidden
                         w-[calc(100%-2rem)] sm:max-w-[min(72vw,860px)]
@@ -591,6 +626,11 @@ export default function BookmarkDrawer({ userId }: { userId: string | null }) {
                         ${closing ? 'spatial-exit' : 'spatial-enter'}
                     `}
                 >
+                    {/* Mobile gesture pull down handle */}
+                    <div className="flex w-full cursor-grab justify-center pt-2.5 pb-0.5 sm:hidden">
+                        <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30 transition-colors hover:bg-muted-foreground/50" />
+                    </div>
+
                     {/* Header */}
                     <div className="flex flex-shrink-0 items-center gap-2 border-b border-[hsl(var(--tile-border)/0.5)] px-4 py-3">
                         {currentFolder || term ? (

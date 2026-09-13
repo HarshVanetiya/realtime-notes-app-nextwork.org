@@ -10,6 +10,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SORT_OPTIONS, type SortValue } from '@/lib/note-tags';
+import { triggerHaptic } from '@/lib/haptics';
 
 export default function NoteToolbar({
     tags,
@@ -35,6 +36,7 @@ export default function NoteToolbar({
     }
 
     function go(key: string, value: string | null) {
+        triggerHaptic('light');
         router.push(withParam(key, value), { scroll: false });
     }
 

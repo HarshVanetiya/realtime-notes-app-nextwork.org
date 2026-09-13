@@ -22,6 +22,7 @@ import {
 import CreateNoteModal from './CreateNoteModal';
 import { useToast } from '@/components/toast-provider';
 import PrismMark from '@/components/PrismMark';
+import { triggerHaptic } from '@/lib/haptics';
 
 const navItems = [
     { href: '/notes', label: 'My Notes', icon: BookOpen, exact: true },
@@ -98,6 +99,31 @@ export default function AppSidebar() {
     const drawerRef = useRef<HTMLElement | null>(null);
     const hamburgerRef = useRef<HTMLButtonElement | null>(null);
     const shouldRestoreFocus = useRef(false);
+
+    // Touch swipe left gesture to close mobile sidebar
+    const drawerTouchStartX = useRef<number | null>(null);
+    const [drawerDragX, setDrawerDragX] = useState<number>(0);
+
+    const onDrawerTouchStart = (e: React.TouchEvent) => {
+        drawerTouchStartX.current = e.touches[0].clientX;
+    };
+
+    const onDrawerTouchMove = (e: React.TouchEvent) => {
+        if (drawerTouchStartX.current === null) return;
+        const dx = e.touches[0].clientX - drawerTouchStartX.current;
+        if (dx < 0) {
+            setDrawerDragX(dx);
+        }
+    };
+
+    const onDrawerTouchEnd = () => {
+        if (drawerDragX < -55) {
+            triggerHaptic('light');
+            setIsOpen(false);
+        }
+        setDrawerDragX(0);
+        drawerTouchStartX.current = null;
+    };
 
     // While the drawer is open: lock the page behind it, keep focus inside it,
     // and allow Escape out.
@@ -469,6 +495,15 @@ export default function AppSidebar() {
                 role={isOpen ? 'dialog' : undefined}
                 tabIndex={-1}
                 inert={!isOpen}
+                onTouchStart={onDrawerTouchStart}
+                onTouchMove={onDrawerTouchMove}
+                onTouchEnd={onDrawerTouchEnd}
+                style={{
+                    transform:
+                        isOpen && drawerDragX < 0
+                            ? `translateX(${drawerDragX}px)`
+                            : undefined,
+                }}
                 className={`
           rail fixed left-0 top-0 z-40 h-full w-[min(18rem,85vw)] border-r
           transition-transform duration-300 ease-out lg:hidden

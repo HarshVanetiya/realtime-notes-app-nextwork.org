@@ -117,6 +117,7 @@ export default function SpatialSurface({
             className={`group tile tile-interactive pressable overflow-hidden ${radiusClass} ${className}`}
         >
             {glareOn && <span className="glare" aria-hidden />}
+            {glareOn && <span className="edge-glow" aria-hidden />}
             {children}
         </div>
     );
