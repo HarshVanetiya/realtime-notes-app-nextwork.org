@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { NotebookPen, Loader2, Lock } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
+import PrismMark from "@/components/PrismMark";
 
 export function UpdatePasswordForm({
   className,
@@ -39,8 +40,8 @@ export function UpdatePasswordForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       {/* Brand */}
       <div className="flex flex-col items-center gap-3 mb-2">
-        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
-          <NotebookPen size={22} className="text-primary-foreground" />
+        <div className="w-12 h-12 rounded-xl bg-[#0d0e10] border border-white/[0.12] flex items-center justify-center p-1.5 shadow-[0_0_20px_rgba(0,229,255,0.2)]">
+          <PrismMark size={36} idSuffix="update" />
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">Set new password</h1>

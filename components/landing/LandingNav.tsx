@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 
+import PrismMark from '@/components/PrismMark';
+
 interface LandingNavProps {
     isSignedIn: boolean;
     isSynced?: boolean;
@@ -64,61 +66,7 @@ export default function LandingNav({
                     aria-label="Prism Home"
                 >
                     <div className="w-8 h-8 rounded-md overflow-hidden bg-white/[0.04] border border-white/[0.12] flex items-center justify-center p-1 transition-transform group-hover:scale-105 shadow-[0_0_15px_rgba(0,229,255,0.15)]">
-                        <svg
-                            className="w-full h-full"
-                            fill="none"
-                            viewBox="0 0 40 40"
-                            xmlns="http://www.w3.org/2000/svg"
-                            aria-hidden
-                        >
-                            <defs>
-                                <linearGradient
-                                    id="prismGlowNav"
-                                    x1="4"
-                                    x2="36"
-                                    y1="4"
-                                    y2="36"
-                                    gradientUnits="userSpaceOnUse"
-                                >
-                                    <stop offset="0%" stopColor="#00E5FF" />
-                                    <stop offset="100%" stopColor="#8B5CF6" />
-                                </linearGradient>
-                                <linearGradient
-                                    id="prismFacetNav"
-                                    x1="20"
-                                    x2="32"
-                                    y1="6"
-                                    y2="32"
-                                    gradientUnits="userSpaceOnUse"
-                                >
-                                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
-                                    <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.1" />
-                                </linearGradient>
-                            </defs>
-                            <polygon
-                                points="20,6 34,31 6,31"
-                                fill="rgba(14, 15, 17, 0.6)"
-                                stroke="url(#prismGlowNav)"
-                                strokeWidth="2"
-                                strokeLinejoin="round"
-                            />
-                            <polygon
-                                points="20,6 20,31 34,31"
-                                fill="url(#prismFacetNav)"
-                            />
-                            <line
-                                x1="20"
-                                y1="6"
-                                x2="20"
-                                y2="31"
-                                stroke="rgba(255,255,255,0.4)"
-                                strokeWidth="1.2"
-                                strokeDasharray="1 1"
-                            />
-                            <circle cx="20" cy="6" r="2.5" fill="#00E5FF" />
-                            <circle cx="6" cy="31" r="2" fill="#8B5CF6" />
-                            <circle cx="34" cy="31" r="2" fill="#00E5FF" />
-                        </svg>
+                        <PrismMark size={32} idSuffix="nav" />
                     </div>
                     <div className="flex items-baseline gap-2">
                         <span className="font-bold tracking-tight text-lg text-white font-sans">
