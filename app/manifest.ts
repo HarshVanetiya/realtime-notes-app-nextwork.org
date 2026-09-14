@@ -13,10 +13,10 @@ export default function manifest(): MetadataRoute.Manifest {
             'Notes that sync live across your devices. Write, tag, search and share.',
         start_url: '/notes',
         display: 'standalone',
-        background_color: '#0b1020',
-        theme_color: '#0b1020',
+        background_color: '#0d0e10',
+        theme_color: '#0d0e10',
         icons: [
-            { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' },
+            { src: '/icon.svg?v=2', sizes: 'any', type: 'image/svg+xml' },
         ],
     };
 }
