@@ -241,12 +241,9 @@ export default function NoteCard({
         const now = Date.now();
         const diff = now - lastTapRef.current;
         if (diff > 50 && diff < 340) {
-            // Double tapped!
-            const rect = cardRef.current?.getBoundingClientRect();
-            const touch = e.changedTouches[0];
-            const x = rect ? touch.clientX - rect.left : 120;
-            const y = rect ? touch.clientY - rect.top : 120;
-            void toggleFavorite({ x, y });
+            // Double tapped! -> Edit note
+            triggerHaptic('light');
+            setIsEditModalOpen(true);
             lastTapRef.current = 0;
         } else {
             lastTapRef.current = now;
@@ -259,13 +256,11 @@ export default function NoteCard({
         setIsDragging(false);
     };
 
-    // Double click on desktop
+    // Double click on desktop -> Edit note
     const handleDoubleClick = (e: React.MouseEvent) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        void toggleFavorite({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-        });
+        e.stopPropagation();
+        triggerHaptic('light');
+        setIsEditModalOpen(true);
     };
 
     const hasImage = Boolean(note.image_url);
@@ -455,7 +450,7 @@ export default function NoteCard({
                                         onOpenChange={setIsEditModalOpen}
                                     >
                                         <button
-                                            title="Edit note"
+                                            title="Edit note (or double-tap)"
                                             aria-label={`Edit ${note.title}`}
                                             className={`${ACTION_BUTTON} text-muted-foreground hover:text-primary-text hover:bg-primary/10`}
                                         >
@@ -478,8 +473,8 @@ export default function NoteCard({
                                         aria-pressed={note.is_favorite}
                                         title={
                                             note.is_favorite
-                                                ? 'Remove from favorites (or double-tap)'
-                                                : 'Add to favorites (or double-tap)'
+                                                ? 'Remove from favorites (or swipe right)'
+                                                : 'Add to favorites (or swipe right)'
                                         }
                                         className={`
                                             ${ACTION_BUTTON}

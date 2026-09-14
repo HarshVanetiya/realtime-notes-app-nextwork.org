@@ -17,7 +17,7 @@ import NoteToolbar from './NoteToolbar';
 import SyncStatusBanner from './SyncStatusBanner';
 import { useToast } from '@/components/toast-provider';
 import NoteCard from './NoteCard';
-import { BookOpen, Star, Search, Plus, X, SearchX, Tag as TagIcon, AlertCircle, Sparkles } from 'lucide-react';
+import { BookOpen, Star, X, SearchX, Tag as TagIcon, AlertCircle, Sparkles } from 'lucide-react';
 import { triggerHaptic } from '@/lib/haptics';
 import CreateNoteModal from './CreateNoteModal';
 import NotesGridSkeleton from './NotesGridSkeleton';
@@ -868,7 +868,7 @@ export default function NotesList({
                             <Sparkles size={14} className="flex-shrink-0 text-amber-400" />
                             <span className="font-semibold text-primary-text flex-shrink-0">Gestures:</span>
                             <span className="text-muted-foreground flex-shrink-0">
-                                Double-tap to star • Swipe left to delete • Long-press for menu
+                                Swipe right to star • Swipe left to delete • Double-tap to edit • Long-press for menu
                             </span>
                         </div>
                         <button
@@ -890,57 +890,6 @@ export default function NotesList({
                     />
                 )}
                 {renderContent()}
-            </div>
-
-            {/* Floating Bottom Navigation Islands.
-                Full-width shell so the row can never push past the viewport edge,
-                and safe-area padding so it clears the iOS home indicator. */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-[calc(env(safe-area-inset-bottom)+2rem)]">
-                <div className="pointer-events-auto flex max-w-full items-center gap-3 sm:gap-4 animate-in slide-in-from-bottom-12 duration-700 fade-in ease-out-back">
-                    {/* Search Capsule (Island 1) */}
-                    <div className="panel group relative flex h-14 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-full px-4 transition-[border-color,box-shadow] duration-base ease-standard focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30 hover:border-primary/40 sm:max-w-[380px] sm:gap-3 sm:px-6 md:max-w-[460px]">
-                        <Search
-                            size={20}
-                            className="relative z-10 flex-shrink-0 text-muted-foreground transition-all duration-300 group-focus-within:text-primary-text"
-                        />
-                        <input
-                            type="search"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search notes..."
-                            aria-label="Search notes"
-                            className="relative z-10 h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
-                        />
-                        {query && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    triggerHaptic('light');
-                                    setQuery('');
-                                }}
-                                aria-label="Clear search"
-                                className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
-                            >
-                                <X size={16} />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Create Note Button (Island 2) */}
-                    <CreateNoteModal>
-                        <button
-                            onClick={() => triggerHaptic('light')}
-                            aria-label="Create note"
-                            className="btn-accent group relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full shadow-lg transition-transform active:scale-95"
-                        >
-                            <Plus
-                                size={26}
-                                className="relative z-10 stroke-[2.5] transition-transform duration-500 ease-in-out group-hover:rotate-90"
-                            />
-                        </button>
-                    </CreateNoteModal>
-
-                </div>
             </div>
         </>
     );
