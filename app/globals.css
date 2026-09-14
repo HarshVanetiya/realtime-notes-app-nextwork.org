@@ -1064,3 +1064,89 @@
         transform: translateX(-50%);
     }
 }
+
+/* ---------------------------------------------------------------------------
+   Prism Spatial Glass v2 Landing Page Utilities
+   --------------------------------------------------------------------------- */
+
+.state-glow-cyan {
+    background: radial-gradient(ellipse 80% 60% at 50% 10%, rgba(0, 229, 255, 0.15) 0%, rgba(139, 92, 246, 0.05) 45%, transparent 70%);
+    transition: background 0.8s ease;
+}
+
+.state-glow-violet {
+    background: radial-gradient(ellipse 80% 60% at 50% 10%, rgba(139, 92, 246, 0.2) 0%, rgba(244, 63, 94, 0.05) 45%, transparent 70%);
+    transition: background 0.8s ease;
+}
+
+@keyframes dashflow {
+    to {
+        stroke-dashoffset: -40;
+    }
+}
+
+.animate-dash-flow {
+    stroke-dasharray: 6 6;
+    animation: dashflow 1.2s linear infinite;
+}
+
+.magnetic-sweep-btn {
+    position: relative;
+    overflow: hidden;
+    clip-path: polygon(0% 0%, calc(100% - 10px) 0%, 100% 10px, 100% 100%, 10px 100%, 0% calc(100% - 10px));
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.magnetic-sweep-btn::before {
+    content: '';
+    position: absolute;
+    top: var(--btn-y, 50%);
+    left: var(--btn-x, 50%);
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(0, 229, 255, 0) 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease-out, height 0.5s ease-out;
+    pointer-events: none;
+}
+
+.magnetic-sweep-btn:hover::before {
+    width: 320px;
+    height: 320px;
+}
+
+@keyframes linkPulse {
+    0% { transform: translateX(0); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateX(180px); opacity: 0; }
+}
+
+.fiber-packet {
+    animation: linkPulse 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes linkPulseVertical {
+    0% { transform: translateY(0); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(50px); opacity: 0; }
+}
+
+.fiber-packet-vertical {
+    animation: linkPulseVertical 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.film-grain {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 40;
+    opacity: 0.038;
+    mix-blend-mode: overlay;
+}
+
