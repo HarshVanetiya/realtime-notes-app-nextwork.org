@@ -15,6 +15,7 @@ import {
 import { useMemo, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import EditNoteModal from './EditNoteModal';
 import { useToast } from '@/components/toast-provider';
 import SpatialSurface from './SpatialSurface';
@@ -64,11 +65,13 @@ export default function NoteCard({
     /** Written offline and not yet on the server. */
     pending?: boolean;
 }) {
+    const router = useRouter();
     const supabase = createClient();
     const toast = useToast();
     const prefs = usePreferences();
     const shape = DENSITY[prefs.density];
     const isList = prefs.layout === 'list';
+    const isDoubleTapRef = useRef<boolean>(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isTogglingFav, setIsTogglingFav] = useState(false);
     const [burstOrigin, setBurstOrigin] = useState<BurstOrigin | null>(null);
@@ -242,6 +245,10 @@ export default function NoteCard({
         const diff = now - lastTapRef.current;
         if (diff > 50 && diff < 340) {
             // Double tapped! -> Edit note
+            isDoubleTapRef.current = true;
+            setTimeout(() => {
+                isDoubleTapRef.current = false;
+            }, 500);
             triggerHaptic('light');
             setIsEditModalOpen(true);
             lastTapRef.current = 0;
@@ -261,6 +268,41 @@ export default function NoteCard({
         e.stopPropagation();
         triggerHaptic('light');
         setIsEditModalOpen(true);
+    };
+
+    const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        // If clicking on an action button, input, or interactive control, ignore
+        const target = e.target as HTMLElement | null;
+        if (
+            target?.closest(
+                'button, [role="button"], input, select, textarea, [data-ignore-card-click]',
+            )
+        ) {
+            return;
+        }
+
+        // If swiping or dragged on mobile, ignore
+        if (isDragging || Math.abs(dragOffset) > 5) {
+            return;
+        }
+
+        // If mobile long-press or double-tap triggered, ignore
+        if (isLongPressRef.current || isDoubleTapRef.current) {
+            return;
+        }
+
+        // If clicked on title link directly, let Next.js Link navigate normally
+        if (target?.closest('a')) {
+            return;
+        }
+
+        // Handle Cmd/Ctrl/Middle click to open note in new tab
+        if (e.metaKey || e.ctrlKey || e.button === 1) {
+            window.open(`/notes/${note.id}`, '_blank');
+            return;
+        }
+
+        router.push(`/notes/${note.id}`);
     };
 
     const hasImage = Boolean(note.image_url);
@@ -323,9 +365,9 @@ export default function NoteCard({
                 }}
             >
                 <SpatialSurface
-                    onClick={() => {}}
+                    onClick={handleCardClick}
                     className={`
-                        relative flex flex-col animate-fade-in
+                        relative flex flex-col animate-fade-in cursor-pointer
                         ${note.is_favorite ? 'ring-1 ring-amber-400/35 shadow-[0_0_20px_-5px_rgba(251,191,36,0.2)]' : ''}
                         ${isDeleting ? 'opacity-50 scale-95 pointer-events-none' : ''}
                         hover:shadow-[0_16px_36px_-10px_hsl(var(--primary)/0.25)]
@@ -405,11 +447,11 @@ export default function NoteCard({
                         {/* Body */}
                         <div className="flex min-h-0 flex-1 flex-col p-4">
                             <div className="flex items-start justify-between gap-2 mb-2">
-                                {/* Stretched link for accessible navigation */}
+                                {/* Accessible navigation link */}
                                 <h2 className="font-semibold text-foreground leading-snug line-clamp-2 flex-1 min-w-0 break-words [overflow-wrap:anywhere] drop-shadow-sm">
                                     <Link
                                         href={`/notes/${note.id}`}
-                                        className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm"
+                                        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm hover:underline"
                                     >
                                         {note.title}
                                     </Link>
@@ -450,6 +492,10 @@ export default function NoteCard({
                                         onOpenChange={setIsEditModalOpen}
                                     >
                                         <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                            }}
                                             title="Edit note (or double-tap)"
                                             aria-label={`Edit ${note.title}`}
                                             className={`${ACTION_BUTTON} text-muted-foreground hover:text-primary-text hover:bg-primary/10`}

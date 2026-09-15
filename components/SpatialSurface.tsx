@@ -39,7 +39,7 @@ export default function SpatialSurface({
     children: ReactNode;
     className?: string;
     radiusClass?: string;
-    onClick?: () => void;
+    onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }) {
     const ref = useRef<HTMLDivElement | null>(null);
     const frame = useRef<number | null>(null);
