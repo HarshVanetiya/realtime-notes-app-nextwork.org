@@ -1,30 +1,25 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import LandingNav from '@/components/landing/LandingNav';
+import WaterGlassNav from '@/components/landing/WaterGlassNav';
 import LandingBackground from '@/components/landing/LandingBackground';
-import HeroSection from '@/components/landing/HeroSection';
-import ProofStrip from '@/components/landing/ProofStrip';
-import SyncEngineSection from '@/components/landing/SyncEngineSection';
-import CapabilitiesBento from '@/components/landing/CapabilitiesBento';
-import HowItWorksLoop from '@/components/landing/HowItWorksLoop';
-import ClosingCTA from '@/components/landing/ClosingCTA';
-import LandingFooter from '@/components/landing/LandingFooter';
+import WaterGlassHero from '@/components/landing/WaterGlassHero';
+import MinimalFeaturesGrid from '@/components/landing/MinimalFeaturesGrid';
+import MinimalClosingCTA from '@/components/landing/MinimalClosingCTA';
+import MinimalLandingFooter from '@/components/landing/MinimalLandingFooter';
 
 export const metadata = {
-    title: 'Prism — notes at the speed of thought',
+    title: 'Prism — A calm place for all your thoughts',
     description:
-        'A realtime notebook that syncs the instant you type, keeps writing when you are offline, and publishes a single note with a link.',
+        'A distraction-free notebook that saves automatically and stays in sync across all your devices. Simple, fast, and completely yours.',
     openGraph: {
-        title: 'Prism — notes at the speed of thought',
+        title: 'Prism — A calm place for all your thoughts',
         description:
-            'A realtime notebook that syncs the instant you type, keeps writing when you are offline, and publishes a single note with a link.',
+            'A distraction-free notebook that saves automatically and stays in sync across all your devices. Simple, fast, and completely yours.',
     },
 };
 
 /**
- * The only part of this page that touches the network. Isolated in its own
- * Suspense boundary so everything else prerenders as static HTML — a landing
- * page that waits on an auth round trip before painting has already lost.
+ * Isolated Suspense boundary for auth check to keep initial page paint instant.
  */
 async function NavWithAuth() {
     try {
@@ -32,50 +27,41 @@ async function NavWithAuth() {
             !process.env.NEXT_PUBLIC_SUPABASE_URL ||
             !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
         ) {
-            return <LandingNav isSignedIn={false} />;
+            return <WaterGlassNav isSignedIn={false} />;
         }
         const supabase = await createClient();
         const { data } = await supabase.auth.getClaims();
-        return <LandingNav isSignedIn={!!data?.claims?.sub} />;
+        return <WaterGlassNav isSignedIn={!!data?.claims?.sub} />;
     } catch {
-        return <LandingNav isSignedIn={false} />;
+        return <WaterGlassNav isSignedIn={false} />;
     }
 }
 
 export default function Home() {
     return (
-        <div className="relative min-h-screen overflow-x-hidden bg-[#0d0e10] text-[#e3e2e4] antialiased selection:bg-[#00e5ff] selection:text-[#00363d]">
+        <div className="relative min-h-screen overflow-x-hidden bg-[#090a0f] text-[#e3e2e5] antialiased selection:bg-[#00e5ff] selection:text-[#090a0f]">
             {/* Ambient dynamic glow & film-grain overlay */}
             <LandingBackground />
 
-            {/* Fixed Architectural Topbar */}
-            <Suspense fallback={<LandingNav isSignedIn={false} />}>
+            {/* Floating Water Glass Island Pill Navigation */}
+            <Suspense fallback={<WaterGlassNav isSignedIn={false} />}>
                 <NavWithAuth />
             </Suspense>
 
-            {/* Main content landmark */}
+            {/* Main content sections matching Stitch design */}
             <main className="relative z-10">
-                {/* 00 // Canvas — Hero Section */}
-                <HeroSection />
+                {/* Hero section with interactive editor preview */}
+                <WaterGlassHero />
 
-                {/* Proof & Benchmark Ticker */}
-                <ProofStrip />
+                {/* 2x2 Bento Features Grid */}
+                <MinimalFeaturesGrid />
 
-                {/* 01 // Engine — Dual-Device Sync Engine Room */}
-                <SyncEngineSection />
-
-                {/* 02 // Specs — Capabilities Bento Grid */}
-                <CapabilitiesBento />
-
-                {/* 03 // Loop — How It Works Loop */}
-                <HowItWorksLoop />
-
-                {/* Closing Conversion CTA */}
-                <ClosingCTA />
+                {/* Closing CTA */}
+                <MinimalClosingCTA />
             </main>
 
-            {/* Minimal Architectural Monolithic Footer */}
-            <LandingFooter />
+            {/* Clean Minimalist Footer */}
+            <MinimalLandingFooter />
         </div>
     );
 }
