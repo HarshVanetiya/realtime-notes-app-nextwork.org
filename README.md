@@ -1,112 +1,91 @@
-<img src="https://cdn.prod.website-files.com/677c400686e724409a5a7409/6790ad949cf622dc8dcd9fe4_nextwork-logo-leather.svg" alt="NextWork" width="300" />
+# Prism — real-time notes
 
-# Build a Real-Time Notes App
+A full-stack notes app built on Next.js and Supabase. Notes sync live across tabs and devices, keep working offline, and can be searched, tagged, shared by link, and exported. It comes with a companion Chrome extension that saves bookmarks into the same account.
 
-**Project Link:** [View Project](https://learn.nextwork.org/projects/6a3a7ddb-254f-4f60-b724-7619e0096351)
+**[Try it live →](https://realtime-notes-app-nextwork-org.vercel.app)**
 
-**Author:** Harsh Vanetia  
-**Email:** hvanetiya@gmail.com
+<!-- Add screenshots here: the notes dashboard, a note open in the editor, and the mobile view.
+![Notes dashboard](docs/screenshots/dashboard.png) -->
 
----
+## Features
 
-![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_kz6vakg0)
+**Writing and organising**
+- Rich-text editor (BlockNote) with image attachments
+- Tags with custom colours and labels, favourites, and a Trash with undo (soft delete)
+- Full-text search across every note, run in Postgres so the dashboard loads one page at a time instead of every note
+- Export any note as Markdown
+- Share a note publicly with a link, and stop sharing at any time
 
-## Project Overview
+**Sync and reliability**
+- Real-time sync across tabs and devices with Supabase Realtime
+- Works offline: edits made without a connection go into an IndexedDB queue and sync when you're back online, with at most one queued change per note so replays never conflict
+- A sync banner shows when you're offline or changes are waiting to upload
 
-### Goals and motivation
+**Experience**
+- Command palette (`Ctrl/⌘ + K`), quick new note (`Ctrl/⌘ + N`), and a shortcuts sheet (`?`)
+- Per-account preferences (accent colour, theme, layout density) saved to your account and applied before the first paint, so there's no flash of the wrong theme
+- Installable as an app (PWA), with touch gestures and a bottom bar on phones
+- Bookmark drawer, fed by the **Prism Bookmarks** Chrome extension: save the current tab or any link with one click
 
-I am building a notes app using supabase and nextjs so that I can learn all features of supabase
+## Security and data
 
-## Scaffolding the Next.js App with Supabase
+- **Row Level Security on every table.** Each query is checked against `auth.uid()`, so users can only ever read or write their own notes, files and bookmarks
+- **Per-user file storage.** Uploaded images live in a folder named after the user's ID, protected by storage policies
+- **Rules enforced by the database,** not just the form: title length, tag limits and URL checks are constraints in Postgres
+- **Server-verified auth.** Pages use `getClaims()`, which verifies the token's signature, rather than trusting the session stored in the browser
 
-### Setting up the project
+## Database as code
 
-In this step, I'm setting up nextjs project with supabase template so that I can use cookie-based auth, TypeScript, Tailwind CSS, and pre-built UI components right out of the box.
+The whole backend can be rebuilt from an empty Supabase project with the files in [`supabase/`](supabase/):
 
-![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_c3omz2p4)
+- **11 migrations,** each idempotent, so re-running them is always safe: notes, RLS, realtime, storage, tags, soft delete, sharing, full-text search, constraints, preferences and bookmarks
+- **`verify.sql`,** 39 read-only checks that confirm everything landed correctly
 
-### What the template provides
+See [`supabase/README.md`](supabase/README.md) for what each migration does.
 
-The template gives me auth setup and pre configured ui and supabase which means I don't have to build supabase client and logic for authentication
+## Tech stack
 
-## Designing a Secure Database with Row Level Security
+| Layer | Tools |
+| --- | --- |
+| Frontend | Next.js (App Router), React 19, TypeScript, Tailwind CSS, Radix UI, BlockNote, cmdk |
+| Backend | Supabase: Postgres, Auth, Realtime, Storage, SQL functions for search and sharing |
+| Offline | IndexedDB write queue |
+| Extension | Chrome Manifest V3, esbuild, supabase-js |
+| Hosting | Vercel |
 
-### Creating the notes table
+## Run it locally
 
-In this step, I'm setting up tables and RLS so that I can store data and only authorised user can see their own data
+You need Node.js 20+ and a free [Supabase](https://supabase.com) project.
 
-![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_ayq9rybo)
+1. **Set up the database.** In the Supabase SQL Editor, run each file in `supabase/migrations/` in order, then run `supabase/verify.sql`. Every row should say `PASS`.
+2. **Install and configure:**
+   ```bash
+   git clone https://github.com/HarshVanetiya/realtime-notes-app-nextwork.org.git prism
+   cd prism
+   npm install
+   cp .env.example .env.local   # add your Supabase URL and publishable key
+   ```
+3. **Start it:**
+   ```bash
+   npm run dev
+   ```
+   Open http://localhost:3000.
 
-### How Row Level Security protects user data
+To build the Chrome extension, see [`extension/README.md`](extension/README.md).
 
-Row Level Security ensures that user without sufficient permissions cant fetch the data by checking auth.uid with tables user_id
+## Project structure
 
-## Building the Protected Notes Dashboard
+```
+app/              pages: landing, auth, notes dashboard, note editor, trash, public share (/n/[slug]), export
+components/       editor, notes grid, command palette, preferences, bookmark drawer, landing page
+lib/              Supabase clients, notes and bookmarks API, offline queue, search queries, preferences
+supabase/         migrations and verify.sql
+extension/        Prism Bookmarks Chrome extension
+scripts/          lint checks for SQL function signatures and accent-colour contrast
+```
 
-### Dashboard architecture
+## How this was built
 
-In this step, I'm building UI. so that users can their own notes
+This started as the [NextWork](https://learn.nextwork.org) "Build a Real-Time Notes App" project, which covered auth, Row Level Security, realtime sync and image uploads. My write-up of that tutorial is in [`docs/nextwork-tutorial.md`](docs/nextwork-tutorial.md).
 
-### Secure authentication with getClaims()
-
-I learned that getClaims() is used because it reads access token from storage and verify it cryptographically. Older method getSession does not do that 
-
-## Enabling Real-Time Sync Across Tabs
-
-### Setting up real-time subscriptions
-
-In this step, I'm creating real time subscription for notes so that notes can noteslist component can sync data accross all tabs
-
-![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_3lubzu2p)
-
-### Cleaning up subscriptions properly
-
-The cleanup function calls supabase.removeChannel which prevents updation of another user's notes affecting current users list
-
-## Adding Image Attachments with Supabase Storage
-
-### Configuring the storage bucket
-
-In this step, I'm setting up storage bucket so that I can store media for notes
-
-![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_kdongp7t)
-
-### Per-user file isolation strategy
-
-Each user's files are stored in a folder named their userId The policy ensures only user whom the folder is belongs to can access the media inside it
-
-## Testing the Full-Stack App End to End
-
-### Full flow verification
-
-In this step, I'm testing complete app so that I can confirm all functionalities work correctly
-
-### Confirming Row Level Security works
-
-I verified RLS by creating a second account and observing that new account is not displaying other account's notes
-
-## Secret Mission: Real-Time Favorites with Filtering
-
-![Image](https://learn.nextwork.org/elated_turquoise_agile_tangelo/uploads/6a3a7ddb-254f-4f60-b724-7619e0096351_7l2w103v)
-
-### Reusing the existing subscription for favorites
-
-In this project extension, the existing subscription already handles updation of UI on change of fav status
-
-## Reflections and Key Takeaways
-
-### Tools and concepts learned
-
-The key tools I used include supabase, vercel and vs code Key concepts I learnt include supabase storage, real-time, RLS and database tables
-
-### Time and challenges
-
-This project took me approximately 2hrs The most challenging part was real time subscription
-
-### Final thoughts
-
-I did this project today to learn how to leverage supabse to build full stack app. Another skill I want to learn is scalability.
-
----
-
-*Built with [NextWork](https://learn.nextwork.org) - [View this project](https://learn.nextwork.org/projects/6a3a7ddb-254f-4f60-b724-7619e0096351)*
+I then kept building well past the tutorial: the editor, offline sync, search, sharing, preferences, the bookmark drawer and the Chrome extension. Some of these features were built with [Claude Code](https://claude.com/claude-code), Anthropic's AI coding agent, as a pair programmer; the commit history shows which.
