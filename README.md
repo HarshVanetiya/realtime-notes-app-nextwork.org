@@ -60,8 +60,8 @@ You need Node.js 20+ and a free [Supabase](https://supabase.com) project.
 1. **Set up the database.** In the Supabase SQL Editor, run each file in `supabase/migrations/` in order, then run `supabase/verify.sql`. Every row should say `PASS`.
 2. **Install and configure:**
    ```bash
-   git clone https://github.com/HarshVanetiya/realtime-notes-app-nextwork.org.git prism
-   cd prism
+   git clone https://github.com/HarshVanetiya/prism-notes.git
+   cd prism-notes
    npm install
    cp .env.example .env.local   # add your Supabase URL and publishable key
    ```
