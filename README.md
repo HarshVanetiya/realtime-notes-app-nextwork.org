@@ -2,7 +2,7 @@
 
 A full-stack notes app built on Next.js and Supabase. Notes sync live across tabs and devices, keep working offline, and can be searched, tagged, shared by link, and exported. It comes with a companion Chrome extension that saves bookmarks into the same account.
 
-**[Try it live →](https://realtime-notes-app-nextwork-org.vercel.app)**
+**[Try it live →](https://notes.hvanetia.me)**
 
 <!-- Add screenshots here: the notes dashboard, a note open in the editor, and the mobile view.
 ![Notes dashboard](docs/screenshots/dashboard.png) -->
