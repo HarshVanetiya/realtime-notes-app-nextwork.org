@@ -1,6 +1,6 @@
 # Prism — real-time notes
 
-A full-stack notes app built on Next.js and Supabase. Notes sync live across tabs and devices, keep working offline, and can be searched, tagged, shared by link, and exported. It comes with a companion Chrome extension that saves bookmarks into the same account.
+A full-stack notes app built on Next.js and Supabase. Notes sync live across tabs and devices, edits survive a dropped connection, and notes can be searched, tagged, shared by link, and exported. It comes with a companion Chrome extension that saves bookmarks into the same account.
 
 **[Try it live →](https://notes.hvanetia.me)**
 
@@ -18,7 +18,7 @@ A full-stack notes app built on Next.js and Supabase. Notes sync live across tab
 
 **Sync and reliability**
 - Real-time sync across tabs and devices with Supabase Realtime
-- Works offline: edits made without a connection go into an IndexedDB queue and sync when you're back online, with at most one queued change per note so replays never conflict
+- Edits survive a dropped connection: if the app is already open when you go offline, new notes and edits go into an IndexedDB queue and sync when you're back online, with at most one queued change per note so replays never conflict. The queue survives a tab crash or browser restart. Images can't be uploaded while offline, and the app needs a connection to load
 - A sync banner shows when you're offline or changes are waiting to upload
 
 **Experience**
