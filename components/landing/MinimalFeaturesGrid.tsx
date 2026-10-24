@@ -1,6 +1,6 @@
 'use client';
 
-import { HardDrive, Feather, Search, Share2, Sparkles } from 'lucide-react';
+import { HardDrive, Feather, Search, Share2 } from 'lucide-react';
 import Reveal from './Reveal';
 
 interface FeatureCardProps {
