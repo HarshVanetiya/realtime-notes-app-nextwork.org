@@ -80,14 +80,14 @@ export default function MinimalFeaturesGrid() {
                 <FeatureCard
                     icon={<HardDrive size={18} />}
                     title="Never lose a thought"
-                    description="Everything saves instantly as you type. Even without internet, your thoughts are safe and ready when you're back."
+                    description="Lose your connection mid-session and your changes stay safe on this device, then sync the moment you're back online."
                     pillLeft={
                         <>
                             <span className="w-1.5 h-1.5 rounded-full bg-[#00e5ff]" />
-                            <span className="text-[#00e5ff]">Always saved locally</span>
+                            <span className="text-[#00e5ff]">Offline edits kept</span>
                         </>
                     }
-                    pillRight="Works seamlessly offline"
+                    pillRight="Syncs when you reconnect"
                     delay={150}
                 />
 
