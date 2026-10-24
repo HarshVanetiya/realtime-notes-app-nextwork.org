@@ -44,7 +44,7 @@ export default function WaterGlassHero() {
             {/* Subtitle */}
             <Reveal delay={160}>
                 <p className="mt-6 text-[#bac9cc] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-normal">
-                    A distraction-free notebook that saves automatically and stays in sync across all your devices. Simple, fast, and completely yours.
+                    A distraction-free notebook that stays in sync across all your devices. Simple, fast, and completely yours.
                 </p>
             </Reveal>
 

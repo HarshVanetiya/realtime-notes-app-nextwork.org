@@ -10,11 +10,11 @@ import MinimalLandingFooter from '@/components/landing/MinimalLandingFooter';
 export const metadata = {
     title: 'Prism — A calm place for all your thoughts',
     description:
-        'A distraction-free notebook that saves automatically and stays in sync across all your devices. Simple, fast, and completely yours.',
+        'A distraction-free notebook that stays in sync across all your devices. Simple, fast, and completely yours.',
     openGraph: {
         title: 'Prism — A calm place for all your thoughts',
         description:
-            'A distraction-free notebook that saves automatically and stays in sync across all your devices. Simple, fast, and completely yours.',
+            'A distraction-free notebook that stays in sync across all your devices. Simple, fast, and completely yours.',
     },
 };
 
